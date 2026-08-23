@@ -705,6 +705,11 @@
   var initialVariant = new URL(window.location.href).searchParams.get('variant') || 'A';
   if (!variantMeta[initialVariant]) initialVariant = 'A';
 
+  var graphCanvasWidth = 1200;
+  var graphCanvasHeight = 815;
+  var graphNodeWidth = 138;
+  var graphNodeAnchorY = 27;
+
   var state = {
     variant: initialVariant,
     query: '',
@@ -719,7 +724,9 @@
     openQuestionId: null,
     questionTab: 'original',
     activeGapId: null,
-    graphZoom: 1
+    graphZoom: 1,
+    graphPanX: 20,
+    graphPanY: 12
   };
 
   nodes.forEach(function (n) { state.evidence[n.id] = 'unobserved'; });
@@ -990,13 +997,13 @@
   function curve(edge) {
     var a = nodeById[edge.from];
     var b = nodeById[edge.to];
-    var x1 = a.x + 126;
-    var y1 = a.y + 23;
+    var x1 = a.x + graphNodeWidth;
+    var y1 = a.y + graphNodeAnchorY;
     var x2 = b.x;
-    var y2 = b.y + 23;
+    var y2 = b.y + graphNodeAnchorY;
     var bend = Math.max(34, Math.abs(x2 - x1) * 0.48);
     if (x2 >= x1) return 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + bend) + ' ' + y1 + ', ' + (x2 - bend) + ' ' + y2 + ', ' + x2 + ' ' + y2;
-    return 'M ' + (a.x + 63) + ' ' + (a.y + 46) + ' C ' + (a.x + 63) + ' ' + (a.y + 78) + ', ' + (b.x + 63) + ' ' + (b.y + 78) + ', ' + (b.x + 63) + ' ' + (b.y + 46);
+    return 'M ' + (a.x + graphNodeWidth / 2) + ' ' + (a.y + 54) + ' C ' + (a.x + graphNodeWidth / 2) + ' ' + (a.y + 86) + ', ' + (b.x + graphNodeWidth / 2) + ' ' + (b.y + 86) + ', ' + (b.x + graphNodeWidth / 2) + ' ' + (b.y + 54);
   }
 
   function graphSvg() {
@@ -1012,7 +1019,7 @@
       var cls = 'edge-path' + (active ? ' active' : '') + (dim ? ' dimmed' : '');
       var d = curve(e);
       var a = nodeById[e.from], b = nodeById[e.to];
-      var lx = (a.x + 126 + b.x) / 2;
+      var lx = (a.x + graphNodeWidth + b.x) / 2;
       var ly = (a.y + b.y) / 2 + 18;
       return '<path class="' + cls + '" d="' + d + '"></path><path class="edge-hit" d="' + d + '" data-action="select-edge" data-id="' + e.id + '"><title>' + esc(e.label + '｜' + e.condition) + '</title></path>' + (active || state.selectedId === e.id ? '<text class="edge-label ' + (active ? 'active' : '') + '" x="' + lx + '" y="' + ly + '">' + esc(e.label) + '</text>' : '');
     }).join('');
@@ -1020,9 +1027,13 @@
       var layer = layers[n.layer];
       var ev = currentEvidence(n.id);
       var cls = 'graph-node' + (state.selectedKind === 'node' && state.selectedId === n.id ? ' active' : '') + (state.question !== 'all' && pathHasNode(n.id) ? ' path-active' : '') + (nodeDimmed(n) ? ' dimmed' : '');
-      return '<foreignObject class="node-foreign" x="' + n.x + '" y="' + n.y + '" width="132" height="58" data-action="select-node" data-id="' + n.id + '"><div xmlns="http://www.w3.org/1999/xhtml" class="' + cls + '" style="--node-color:' + layer.color + '"><div><div class="node-code">' + n.id + '</div><div class="node-name">' + esc(n.name) + '</div></div><span class="evidence-dot" style="--evidence-color:' + ev.color + '" title="' + esc(ev.name) + '"></span></div></foreignObject>';
+      return '<foreignObject class="node-foreign" x="' + n.x + '" y="' + n.y + '" width="146" height="70" data-action="select-node" data-id="' + n.id + '"><div xmlns="http://www.w3.org/1999/xhtml" class="' + cls + '" style="--node-color:' + layer.color + '"><div><div class="node-code">' + n.id + '</div><div class="node-name">' + esc(n.name) + '</div></div><span class="evidence-dot" style="--evidence-color:' + ev.color + '" title="' + esc(ev.name) + '"></span></div></foreignObject>';
     }).join('');
     return '<svg class="knowledge-svg" viewBox="0 0 1200 815" role="img" aria-label="氧化还原知识连接全景图"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#8f9b94"></path></marker></defs>' + backs + edgeHtml + nodeHtml + '</svg>';
+  }
+
+  function graphTransformStyle() {
+    return 'transform:translate3d(' + state.graphPanX + 'px,' + state.graphPanY + 'px,0) scale(' + state.graphZoom + ')';
   }
 
   function renderVariantA() {
@@ -1034,8 +1045,8 @@
         '<main class="variant-a-grid">',
           sideFilters(),
           '<section class="graph-stage">',
-            '<div class="graph-toolbar"><button class="icon-button" data-action="zoom-out" title="缩小">−</button><button class="icon-button" data-action="zoom-reset" title="重置">' + Math.round(state.graphZoom * 100) + '%</button><button class="icon-button" data-action="zoom-in" title="放大">＋</button></div>',
-            '<div class="graph-wrap" style="width:' + (state.graphZoom * 100) + '%">' + graphSvg() + '</div>',
+            '<div class="graph-toolbar"><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小知识图">−</button><button class="icon-button graph-zoom-value" data-action="zoom-reset" title="重置缩放和位置">' + Math.round(state.graphZoom * 100) + '%</button><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大知识图">＋</button><span class="graph-help">Ctrl＋滚轮缩放 · 按住空白处拖动</span></div>',
+            '<div class="graph-canvas" style="width:' + graphCanvasWidth + 'px;height:' + graphCanvasHeight + 'px;' + graphTransformStyle() + '">' + graphSvg() + '</div>',
           '</section>',
           '<aside class="side-panel right">' + detailPanel(false) + '</aside>',
         '</main>',
@@ -1267,6 +1278,7 @@
       open_question: state.openQuestionId,
       question_tab: state.questionTab,
       active_candidate_gap: state.activeGapId,
+      graph_view: { zoom: state.graphZoom, pan_x: state.graphPanX, pan_y: state.graphPanY },
       evidence_overlay: Object.keys(state.evidence).filter(function (id) { return state.evidence[id] !== 'unobserved'; }).reduce(function (acc, id) { acc[id] = state.evidence[id]; return acc; }, {}),
       persistence: 'memory_only',
       student_evidence_imported: false
@@ -1286,6 +1298,88 @@
     var ids = Object.keys(variantMeta);
     var index = ids.indexOf(state.variant);
     setVariant(ids[(index + delta + ids.length) % ids.length]);
+  }
+
+  function clampGraphPan() {
+    var stage = document.querySelector('.graph-stage');
+    if (!stage) return;
+    var visibleMargin = 120;
+    var scaledWidth = graphCanvasWidth * state.graphZoom;
+    var scaledHeight = graphCanvasHeight * state.graphZoom;
+    state.graphPanX = Math.min(stage.clientWidth - visibleMargin, Math.max(visibleMargin - scaledWidth, state.graphPanX));
+    state.graphPanY = Math.min(stage.clientHeight - visibleMargin, Math.max(visibleMargin - scaledHeight, state.graphPanY));
+    state.graphPanX = Math.round(state.graphPanX * 10) / 10;
+    state.graphPanY = Math.round(state.graphPanY * 10) / 10;
+  }
+
+  function applyGraphTransform() {
+    var canvas = document.querySelector('.graph-canvas');
+    if (!canvas) return;
+    clampGraphPan();
+    canvas.style.transform = 'translate3d(' + state.graphPanX + 'px,' + state.graphPanY + 'px,0) scale(' + state.graphZoom + ')';
+    var value = document.querySelector('.graph-zoom-value');
+    if (value) value.textContent = Math.round(state.graphZoom * 100) + '%';
+  }
+
+  function setGraphZoom(nextZoom, anchorX, anchorY) {
+    var stage = document.querySelector('.graph-stage');
+    if (!stage) return;
+    var oldZoom = state.graphZoom;
+    var next = Math.min(2.4, Math.max(0.55, Math.round(nextZoom * 100) / 100));
+    if (next === oldZoom) return;
+    var x = anchorX == null ? stage.clientWidth / 2 : anchorX;
+    var y = anchorY == null ? stage.clientHeight / 2 : anchorY;
+    var canvasX = (x - state.graphPanX) / oldZoom;
+    var canvasY = (y - state.graphPanY) / oldZoom;
+    state.graphZoom = next;
+    state.graphPanX = x - canvasX * next;
+    state.graphPanY = y - canvasY * next;
+    applyGraphTransform();
+  }
+
+  function resetGraphView() {
+    var stage = document.querySelector('.graph-stage');
+    state.graphZoom = 1;
+    state.graphPanX = stage ? Math.max(20, (stage.clientWidth - graphCanvasWidth) / 2) : 20;
+    state.graphPanY = 12;
+    applyGraphTransform();
+  }
+
+  function bindGraphInteractions() {
+    var stage = document.querySelector('.graph-stage');
+    if (!stage) return;
+    stage.addEventListener('wheel', function (event) {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      var rect = stage.getBoundingClientRect();
+      var factor = Math.exp(-event.deltaY * 0.0013);
+      setGraphZoom(state.graphZoom * factor, event.clientX - rect.left, event.clientY - rect.top);
+    }, { passive: false });
+
+    var drag = null;
+    stage.addEventListener('pointerdown', function (event) {
+      if (event.button !== 0 || event.pointerType !== 'mouse') return;
+      if (event.target.closest('[data-action], button, a, input')) return;
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: state.graphPanX, panY: state.graphPanY };
+      stage.setPointerCapture(event.pointerId);
+      stage.classList.add('is-panning');
+      event.preventDefault();
+    });
+    stage.addEventListener('pointermove', function (event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      state.graphPanX = drag.panX + event.clientX - drag.x;
+      state.graphPanY = drag.panY + event.clientY - drag.y;
+      applyGraphTransform();
+    });
+    function endDrag(event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      drag = null;
+      stage.classList.remove('is-panning');
+      if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+    }
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+    stage.addEventListener('lostpointercapture', function () { drag = null; stage.classList.remove('is-panning'); });
   }
 
   function bind() {
@@ -1335,9 +1429,9 @@
         else if (action === 'close-state') {
           if (event.target === el || el.tagName === 'BUTTON') { state.showState = false; render(); }
         }
-        else if (action === 'zoom-in') { state.graphZoom = Math.min(1.6, +(state.graphZoom + 0.1).toFixed(1)); render(); }
-        else if (action === 'zoom-out') { state.graphZoom = Math.max(0.7, +(state.graphZoom - 0.1).toFixed(1)); render(); }
-        else if (action === 'zoom-reset') { state.graphZoom = 1; render(); }
+        else if (action === 'zoom-in') setGraphZoom(state.graphZoom + 0.15);
+        else if (action === 'zoom-out') setGraphZoom(state.graphZoom - 0.15);
+        else if (action === 'zoom-reset') resetGraphView();
       });
     });
     var search = document.getElementById('map-search');
@@ -1360,6 +1454,7 @@
         if (next) { next.focus(); next.setSelectionRange(position, position); }
       });
     }
+    bindGraphInteractions();
   }
 
   function render() {
