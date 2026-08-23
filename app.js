@@ -699,6 +699,7 @@
 
   var nodeById = {};
   var edgeById = {};
+  var nodeLearningData = window.nodeLearningData || {};
   nodes.forEach(function (n) { nodeById[n.id] = n; });
   edges.forEach(function (e) { edgeById[e.id] = e; });
 
@@ -765,7 +766,8 @@
     if (!state.query.trim()) return true;
     var q = state.query.trim().toLowerCase();
     var edgeText = connectionFor(node.id).map(function (e) { return e.label + ' ' + e.reason; }).join(' ');
-    return [node.id, node.name, node.summary, node.boundary, node.example, node.probe, edgeText].join(' ').toLowerCase().indexOf(q) >= 0;
+    var learning = nodeLearningData[node.id] || { statement: '', surfaces: [], misconception: '' };
+    return [node.id, node.name, node.summary, node.boundary, node.example, node.probe, learning.statement, learning.surfaces.join(' '), learning.misconception, edgeText].join(' ').toLowerCase().indexOf(q) >= 0;
   }
 
   function pathHasNode(id) {
@@ -800,6 +802,7 @@
           '<span class="state-pill"><strong>' + nodes.length + '</strong> 节点</span>',
           '<span class="state-pill"><strong>' + edges.length + '</strong> 条连接</span>',
           '<button class="ghost-button question-library-button" data-action="open-library">真题库 <strong>' + Object.keys(questionBank).length + '</strong></button>',
+          '<a class="primary-button challenge-entry" href="./challenge.html">节点闯关</a>',
           '<span class="state-pill"><strong>' + observed + '</strong> 条证据标记</span>',
           '<button class="ghost-button" data-action="show-state">查看状态</button>',
         '</div>',
@@ -817,7 +820,7 @@
     }).join('');
     return [
       '<div class="toolbar">',
-        '<label class="search-box"><span class="visually-hidden">搜索知识点</span><input id="map-search" value="' + esc(state.query) + '" placeholder="搜索节点、关系、例子或探针"></label>',
+        '<label class="search-box"><span class="visually-hidden">搜索知识点</span><input id="map-search" value="' + esc(state.query) + '" placeholder="搜索节点、关系、广义陈述或高考表面"></label>',
         '<div class="control-group"><span class="control-label">真题路径</span>' + questionButtons + '</div>',
         '<div class="control-group"><span class="control-label">知识层</span>' + layerButtons + '</div>',
       '</div>'
@@ -869,11 +872,6 @@
     }).join('') + '</div>';
   }
 
-  function shortContextText(text, maxLength) {
-    var clean = String(text || '').replace(/\s+/g, ' ').trim();
-    return clean.length > maxLength ? clean.slice(0, maxLength) + '…' : clean;
-  }
-
   function questionNodeContext(node) {
     if (state.question === 'all' || !questionBank[state.question]) return null;
     var question = questionBank[state.question];
@@ -887,17 +885,13 @@
     var boundary = matchingGaps.length
       ? '候选误跳：' + matchingGaps.map(function (candidate) { return candidate.symptom; }).join('；') + ' 本题仍须完成“' + firstCall.action + '”，并用“' + firstCall.check + '”自检。'
       : '不能从题面直接跳到“' + firstCall.result + '”。本题仍须先完成“' + firstCall.action + '”，并用“' + firstCall.check + '”检查中间依据。';
-    var surface = questionTag(question) + ' · ' + question.format + '。本题把“' + node.name + '”放在“' + question.title + '”这一表面情境中。';
-    if (question.stem && question.stem[0]) surface += ' 题干入口：' + shortContextText(question.stem[0], 110);
-    var probe = matchingGaps.length
-      ? matchingGaps[0].probe
-      : '先不看后续步骤：你会怎样完成“' + firstCall.action + '”？请只给一个关键答案和一句依据；再用“' + firstCall.check + '”自检。';
+    var learning = nodeLearningData[node.id] || { statement: node.summary };
+    var directStatement = learning.statement + ' 在本题中的具体落点是：先“' + firstCall.action + '”，得到“' + firstCall.result + '”。';
     return {
       question: question,
       calls: calls,
       boundary: boundary,
-      surface: surface,
-      probe: probe
+      directStatement: directStatement
     };
   }
 
@@ -920,9 +914,8 @@
       '<section class="question-node-context">',
         '<div class="question-context-kicker"><span>当前题目语境 · 会随题目切换</span><strong>' + esc(questionTag(question)) + '</strong></div>',
         '<h3>本题怎样调用这个节点</h3><div class="question-context-calls">' + callHtml + '</div>',
+        '<h3>本题中发生的变化</h3><div class="reason-box canonical-statement">' + esc(context.directStatement) + '</div>',
         '<h3>本题不能直接推出</h3><div class="boundary-box">' + esc(context.boundary) + '</div>',
-        '<h3>本题高考表面因子</h3><div class="reason-box">' + esc(context.surface) + '</div>',
-        '<h3>本题最小诊断问题</h3><div class="probe-box">' + esc(context.probe) + '</div>',
         '<button class="ghost-button context-open-question" data-action="open-question" data-id="' + question.id + '">打开这道题核对题面</button>',
       '</section>'
     ].join('');
@@ -953,6 +946,11 @@
     var conns = connectionFor(item.id);
     var nodeQuestionIds = relatedQuestionIdsForNode(item.id);
     var ev = currentEvidence(item.id);
+    var learning = nodeLearningData[item.id] || {
+      statement: item.summary,
+      surfaces: [item.example],
+      misconception: item.boundary
+    };
     var connectionHtml = conns.map(function (e) {
       var other = nodeById[e.from === item.id ? e.to : e.from];
       var arrow = e.from === item.id ? '→' : '←';
@@ -971,9 +969,10 @@
         '<div class="generic-node-model">',
           '<div class="generic-model-title"><span>通用知识模型</span><small>不随题目改变</small></div>',
           '<p>' + esc(item.summary) + '</p>',
-          '<h3>通用边界</h3><div class="boundary-box">' + esc(item.boundary) + '</div>',
-          '<h3>通用高考例子</h3><div class="reason-box">' + esc(item.example) + '</div>',
-          '<h3>通用最小诊断问题</h3><div class="probe-box">' + esc(item.probe) + '</div>',
+          '<h3>广义必备陈述</h3><div class="reason-box canonical-statement">' + esc(learning.statement) + '</div>',
+          '<h3>常见高考表面</h3><div class="surface-factor-list">' + learning.surfaces.map(function (surface) { return '<span>' + esc(surface) + '</span>'; }).join('') + '</div>',
+          '<h3>易混边界</h3><div class="boundary-box"><strong>错误陈述：</strong>' + esc(learning.misconception) + '<br><strong>广义边界：</strong>' + esc(item.boundary) + '</div>',
+          '<a class="ghost-button node-challenge-link" href="./challenge.html?node=' + item.id + '">练习这个节点</a>',
         '</div>',
         '<h3>经过这个节点的已核验真题 · ' + nodeQuestionIds.length + '</h3>' + relatedQuestionButtons(nodeQuestionIds),
         '<h3>相邻连接 · ' + conns.length + '</h3><div class="connection-list">' + connectionHtml + '</div>',
