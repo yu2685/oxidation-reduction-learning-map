@@ -848,8 +848,77 @@
     if (!ids.length) return '<p class="muted-note">当前已核验题库中还没有题目调用这里。</p>';
     return '<div class="related-question-list">' + ids.map(function (id) {
       var q = questionBank[id];
-      return '<button class="related-question" data-action="open-question" data-id="' + id + '"><span>' + esc(questionTag(q)) + '</span><strong>' + esc(q.title) + '</strong></button>';
+      var active = state.question === id;
+      return [
+        '<div class="related-question-row">',
+          '<button class="related-question ' + (active ? 'active' : '') + '" data-action="highlight-question" data-id="' + id + '">',
+            '<span>' + esc(questionTag(q)) + (active ? ' · 当前路径' : '') + '</span>',
+            '<strong>' + esc(q.title) + '</strong>',
+            '<small>切换整张知识图与节点题目语境</small>',
+          '</button>',
+          '<button class="related-question-open" data-action="open-question" data-id="' + id + '">看原题</button>',
+        '</div>'
+      ].join('');
     }).join('') + '</div>';
+  }
+
+  function shortContextText(text, maxLength) {
+    var clean = String(text || '').replace(/\s+/g, ' ').trim();
+    return clean.length > maxLength ? clean.slice(0, maxLength) + '…' : clean;
+  }
+
+  function questionNodeContext(node) {
+    if (state.question === 'all' || !questionBank[state.question]) return null;
+    var question = questionBank[state.question];
+    var calls = [];
+    question.path.forEach(function (pathStep, index) {
+      if (pathStep.node === node.id) calls.push({ step: pathStep, index: index + 1 });
+    });
+    if (!calls.length) return { question: question, calls: [] };
+    var matchingGaps = question.gaps.filter(function (candidate) { return candidate.node === node.id; });
+    var firstCall = calls[0].step;
+    var boundary = matchingGaps.length
+      ? '候选误跳：' + matchingGaps.map(function (candidate) { return candidate.symptom; }).join('；') + ' 本题仍须完成“' + firstCall.action + '”，并用“' + firstCall.check + '”自检。'
+      : '不能从题面直接跳到“' + firstCall.result + '”。本题仍须先完成“' + firstCall.action + '”，并用“' + firstCall.check + '”检查中间依据。';
+    var surface = questionTag(question) + ' · ' + question.format + '。本题把“' + node.name + '”放在“' + question.title + '”这一表面情境中。';
+    if (question.stem && question.stem[0]) surface += ' 题干入口：' + shortContextText(question.stem[0], 110);
+    var probe = matchingGaps.length
+      ? matchingGaps[0].probe
+      : '先不看后续步骤：你会怎样完成“' + firstCall.action + '”？请只给一个关键答案和一句依据；再用“' + firstCall.check + '”自检。';
+    return {
+      question: question,
+      calls: calls,
+      boundary: boundary,
+      surface: surface,
+      probe: probe
+    };
+  }
+
+  function renderQuestionNodeContext(node) {
+    var context = questionNodeContext(node);
+    if (!context) return '';
+    var question = context.question;
+    if (!context.calls.length) {
+      return [
+        '<section class="question-node-context off-path">',
+          '<div class="question-context-kicker"><span>当前题目语境</span><strong>' + esc(questionTag(question)) + '</strong></div>',
+          '<p>当前题目的有效路径没有调用“' + esc(node.name) + '”。因此这里不伪造本题例子；下面只展示这个节点的通用模型。可从“经过这个节点的题目”切换到真正调用它的题。</p>',
+        '</section>'
+      ].join('');
+    }
+    var callHtml = context.calls.map(function (call) {
+      return '<div class="question-context-call"><span>Step ' + call.index + '</span><p><strong>' + esc(call.step.action) + '</strong> → ' + esc(call.step.result) + '</p><small>自检：' + esc(call.step.check) + '</small></div>';
+    }).join('');
+    return [
+      '<section class="question-node-context">',
+        '<div class="question-context-kicker"><span>当前题目语境 · 会随题目切换</span><strong>' + esc(questionTag(question)) + '</strong></div>',
+        '<h3>本题怎样调用这个节点</h3><div class="question-context-calls">' + callHtml + '</div>',
+        '<h3>本题不能直接推出</h3><div class="boundary-box">' + esc(context.boundary) + '</div>',
+        '<h3>本题高考表面因子</h3><div class="reason-box">' + esc(context.surface) + '</div>',
+        '<h3>本题最小诊断问题</h3><div class="probe-box">' + esc(context.probe) + '</div>',
+        '<button class="ghost-button context-open-question" data-action="open-question" data-id="' + question.id + '">打开这道题核对题面</button>',
+      '</section>'
+    ].join('');
   }
 
   function detailPanel(compact) {
@@ -885,15 +954,20 @@
     var evidenceHtml = evidenceStates.map(function (e) {
       return '<button class="evidence-option ' + (ev.id === e.id ? 'active' : '') + '" style="--evidence-color:' + e.color + '" data-action="evidence" data-node="' + item.id + '" data-id="' + e.id + '">' + esc(e.name) + '</button>';
     }).join('');
+    var questionContextHtml = renderQuestionNodeContext(item);
     return [
       '<article class="detail-card" style="--node-color:' + layer.color + '">',
         '<span class="detail-layer">' + esc(layer.name) + '</span>',
         '<div class="detail-code">' + esc(item.id) + '</div>',
         '<h2>' + esc(item.name) + '</h2>',
-        '<p>' + esc(item.summary) + '</p>',
-        '<h3>不能直接推出</h3><div class="boundary-box">' + esc(item.boundary) + '</div>',
-        '<h3>高考表面例子</h3><div class="reason-box">' + esc(item.example) + '</div>',
-        '<h3>最小诊断问题</h3><div class="probe-box">' + esc(item.probe) + '</div>',
+        questionContextHtml,
+        '<div class="generic-node-model">',
+          '<div class="generic-model-title"><span>通用知识模型</span><small>不随题目改变</small></div>',
+          '<p>' + esc(item.summary) + '</p>',
+          '<h3>通用边界</h3><div class="boundary-box">' + esc(item.boundary) + '</div>',
+          '<h3>通用高考例子</h3><div class="reason-box">' + esc(item.example) + '</div>',
+          '<h3>通用最小诊断问题</h3><div class="probe-box">' + esc(item.probe) + '</div>',
+        '</div>',
         '<h3>经过这个节点的已核验真题 · ' + nodeQuestionIds.length + '</h3>' + relatedQuestionButtons(nodeQuestionIds),
         '<h3>相邻连接 · ' + conns.length + '</h3><div class="connection-list">' + connectionHtml + '</div>',
         compact ? '' : '<h3>学生证据覆盖层</h3><div class="evidence-selector">' + evidenceHtml + '</div>',
