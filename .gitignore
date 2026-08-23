@@ -1,0 +1,7 @@
+# Keep the public demo repository small and avoid publishing source exam papers.
+*.pdf
+Thumbs.db
+.DS_Store
+test-results/
+playwright-report/
+
