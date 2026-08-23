@@ -657,6 +657,46 @@
     }
   };
 
+  var expandedQuestionBank = window.expandedQuestionBank || {};
+
+  function inferExpandedQuestionEdges(path) {
+    var result = [];
+    var seen = {};
+    for (var i = 1; i < path.length; i += 1) {
+      var previous = path[i - 1].node;
+      var current = path[i].node;
+      edges.forEach(function (edge) {
+        var connectsPair = (edge.from === previous && edge.to === current) ||
+          (edge.from === current && edge.to === previous);
+        if (connectsPair && !seen[edge.id]) {
+          seen[edge.id] = true;
+          result.push(edge.id);
+        }
+      });
+    }
+    return result;
+  }
+
+  Object.keys(expandedQuestionBank).forEach(function (id) {
+    var question = expandedQuestionBank[id];
+    var pathNodes = [];
+    var seenNodes = {};
+    questionBank[id] = question;
+    question.path.forEach(function (pathStep) {
+      if (!seenNodes[pathStep.node]) {
+        seenNodes[pathStep.node] = true;
+        pathNodes.push(pathStep.node);
+      }
+    });
+    questions[id] = {
+      name: id + ' ' + (question.short || question.title),
+      short: question.short || id,
+      nodes: pathNodes,
+      edges: inferExpandedQuestionEdges(question.path),
+      note: question.year + ' ' + question.province + ' ' + question.number + '：' + question.title
+    };
+  });
+
   var nodeById = {};
   var edgeById = {};
   nodes.forEach(function (n) { nodeById[n.id] = n; });
