@@ -697,11 +697,157 @@
     };
   });
 
+  // PROTOTYPE QUESTION: Does an option/subquestion-level route make the reviewed
+  // whole-question path easier to inspect without inventing unsupported steps?
+  // Transcribed options use reviewed, manually selected subsets of the existing path.
+  var optionUnitSpecs = {
+    Q001: [
+      { keyword: '氧化还原判定', nodes: ['O1','O2','O3','R4','C5'], analysis: 0 },
+      { keyword: '元素价态升降', nodes: ['O1','O2','O3','R4','C5'], analysis: 1 },
+      { keyword: '元素价态升降', nodes: ['O1','O2','O3','R4','C5'], analysis: 2 },
+      { keyword: '元素价态升降', nodes: ['O1','O2','O3','R4','C5'], analysis: 3 }
+    ],
+    Q005: [
+      { keyword: '离子迁移与电中性', nodes: ['O1','O3','X2','X4'], analysis: 0 },
+      { keyword: '中间体净速率', nodes: ['O1','O3','X10'], analysis: 1 },
+      { keyword: '气体现象证据', nodes: ['O1','O3','X2','X8'], analysis: 2 },
+      { keyword: '两极半反应相加', nodes: ['O1','O3','Q5'], analysis: 3 }
+    ],
+    Q006: [
+      { keyword: '电子式', nodes: [], analysis: 0, outside: '该选项主要依赖分子结构与电子式，不在当前氧化还原知识图内伪造路径。' },
+      { keyword: '分子极性', nodes: [], analysis: 1, outside: '该选项需要分子空间结构与极性模型，当前氧化还原图不展开。' },
+      { keyword: '键的极性', nodes: [], analysis: 2, outside: '该选项需要化学键类型模型，不把它错挂到氧化还原节点上。' },
+      { keyword: '归中与产物命名', nodes: ['O1','R1','R4','X6','A1','A2'], analysis: 3 }
+    ],
+    Q007: [
+      { keyword: '放电时溶液质量', nodes: ['O1','X2','Q3','Q7'], analysis: 2 },
+      { keyword: '充放电方向反转', nodes: ['O1','X2','Q3'], analysis: 3 },
+      { keyword: 'Li+ 迁移方向', nodes: ['O1','X2','X4'], analysis: 0 },
+      { keyword: '物质的量不能直接当浓度', nodes: ['O1','Q3','Q7'], analysis: 3 }
+    ],
+    Q009: [
+      { keyword: '电子流向到电极反应', nodes: ['X3','X2','Q3'], analysis: 0 },
+      { keyword: '质子迁移', nodes: ['X3','X2','X4'], analysis: 1 },
+      { keyword: '溶剂变化与 pH', nodes: ['X2','Q3','Q7','O2'], analysis: 2 },
+      { keyword: '电子与气体计量', nodes: ['X2','Q3','Q7'], analysis: 3 }
+    ],
+    Q010: [
+      { keyword: '极性共价键', nodes: [], analysis: 0, outside: '该选项主要检查化学键形成，当前氧化还原图只保留与净反应相关的路径。' },
+      { keyword: '过程与净反应分层', nodes: ['O1','O3','Q1','B5'], analysis: 1 },
+      { keyword: '16e- 电荷守恒', nodes: ['O1','O3','Q1','Q2','Q5','B5'], analysis: 2 },
+      { keyword: '守恒不能代替反应条件', nodes: ['O1','B5'], analysis: 3 }
+    ],
+    Q011: [
+      { keyword: '阳极失电子', nodes: ['O1','O2','X2','Q5'], analysis: 0 },
+      { keyword: '阳极气体产物', nodes: ['O2','Q5'], analysis: 1 },
+      { keyword: '铁价态未变', nodes: ['O1','O2','A3','B4'], analysis: 2 },
+      { keyword: '添加剂旁路反应', nodes: ['O2','Q5','A3','B4'], analysis: 3 }
+    ],
+    Q013: [
+      { keyword: 'I- 的还原性', nodes: ['O1','X8','A3'], analysis: 1 },
+      { keyword: 'H2O2 歧化', nodes: ['O1','X6','A3'], analysis: 0 },
+      { keyword: '现象到有机氧化', nodes: ['O1','X8','X11'], analysis: 2 },
+      { keyword: '银镜反应条件', nodes: ['O1','X11','Q6'], analysis: 3 }
+    ],
+    Q014: [
+      { keyword: '充放电电极反转', nodes: ['O1','O3','X2'], analysis: 3 },
+      { keyword: '半反应中 H+ 消耗', nodes: ['O1','O3','X2','Q5'], analysis: 1 },
+      { keyword: '负极半反应', nodes: ['O1','O3','X2','Q5'], analysis: 2 },
+      { keyword: '电子当量与容量', nodes: ['O1','O3','X2','Q2','Q4','Q7'], analysis: 3 }
+    ],
+    Q015: [
+      { keyword: 'CO2 的氧化性', nodes: ['O1','X8','R4','A1'], analysis: 0 },
+      { keyword: '控制变量与强弱证据', nodes: ['O1','X8','Q6','X7'], analysis: 1 },
+      { keyword: '原电池加速腐蚀', nodes: ['O1','X8','X7'], analysis: 2 },
+      { keyword: '现象到还原糖', nodes: ['O1','X8','X11'], analysis: 3 }
+    ]
+  };
+
   var nodeById = {};
   var edgeById = {};
   var nodeLearningData = window.nodeLearningData || {};
   nodes.forEach(function (n) { nodeById[n.id] = n; });
   edges.forEach(function (e) { edgeById[e.id] = e; });
+
+  function pathSubset(question, allowedNodes) {
+    if (!allowedNodes) return question.path.slice();
+    var selected = question.path.filter(function (step) { return allowedNodes.indexOf(step.node) >= 0; });
+    if (selected.length > 1 && selected[0].node === 'O1' && selected[selected.length - 1].node === 'O1') selected.pop();
+    return selected;
+  }
+
+  function questionFamily(question) {
+    if (question.format.indexOf('大题子问') < 0 || !question.image) return [question];
+    return Object.keys(questionBank).map(function (id) { return questionBank[id]; }).filter(function (candidate) {
+      return candidate.format.indexOf('大题子问') >= 0 && candidate.image === question.image;
+    });
+  }
+
+  function questionUnits(question) {
+    var family = questionFamily(question);
+    if (family.length > 1) {
+      return family.map(function (child) {
+        return {
+          key: 'subquestion:' + child.id,
+          kind: 'subquestion',
+          questionId: child.id,
+          label: child.number,
+          title: child.title,
+          keyword: child.short || nodeById[child.path[0].node].name,
+          prompt: child.stem.join(' '),
+          explanation: child.answer,
+          path: child.path.slice(),
+          sourceNote: '该小问已作为独立 ItemUnit 完成题面、答案和路径核对。'
+        };
+      });
+    }
+
+    var specs = optionUnitSpecs[question.id];
+    if (question.options.length && specs && specs.length === question.options.length) {
+      return question.options.map(function (option, index) {
+        var spec = specs[index];
+        return {
+          key: 'option:' + question.id + ':' + index,
+          kind: 'option',
+          questionId: question.id,
+          optionIndex: index,
+          label: String.fromCharCode(65 + index) + ' 项',
+          title: option.replace(/^[A-D]．\s*/, ''),
+          keyword: spec.keyword,
+          prompt: option,
+          explanation: question.analysis[spec.analysis] || '',
+          path: pathSubset(question, spec.nodes),
+          outside: spec.outside || '',
+          sourceNote: spec.outside ? '该选项超出当前氧化还原局部图谱。' : '子路径仅从已复核的整题路径中取得，未添加新的化学结论。'
+        };
+      });
+    }
+
+    return [{
+      key: 'item:' + question.id,
+      kind: 'item',
+      questionId: question.id,
+      label: question.format.indexOf('大题子问') >= 0 ? '本小问' : '当前 ItemUnit',
+      title: question.title,
+      keyword: question.short || nodeById[question.path[0].node].name,
+      prompt: question.stem.join(' '),
+      explanation: question.answer,
+      path: question.path.slice(),
+      sourceNote: question.options.length ? '当前选项尚未逐项转写，因此保留已复核的 ItemUnit 路径，不自动伪拆。' : '该 ItemUnit 本身就是一个已拆小问或单一任务。'
+    }];
+  }
+
+  function unitByKey(question, key) {
+    var units = questionUnits(question);
+    return units.filter(function (unit) { return unit.key === key; })[0] || units[0];
+  }
+
+  function edgeIdsForPath(path) {
+    var ids = path.map(function (step) { return step.node; });
+    return edges.filter(function (edge) {
+      return ids.indexOf(edge.from) >= 0 && ids.indexOf(edge.to) >= 0;
+    }).map(function (edge) { return edge.id; });
+  }
 
   var initialVariant = new URL(window.location.href).searchParams.get('variant') || 'A';
   if (!variantMeta[initialVariant]) initialVariant = 'A';
@@ -724,6 +870,10 @@
     showQuestionLibrary: false,
     openQuestionId: null,
     questionTab: 'original',
+    activeUnitKey: null,
+    activePathNodeIds: null,
+    activePathEdgeIds: null,
+    activePathLabel: '',
     activeGapId: null,
     graphZoom: 1,
     graphPanX: 20,
@@ -771,10 +921,12 @@
   }
 
   function pathHasNode(id) {
+    if (state.activePathNodeIds) return state.activePathNodeIds.indexOf(id) >= 0;
     return state.question === 'all' || questions[state.question].nodes.indexOf(id) >= 0;
   }
 
   function pathHasEdge(id) {
+    if (state.activePathEdgeIds) return state.activePathEdgeIds.indexOf(id) >= 0;
     return state.question === 'all' || questions[state.question].edges.indexOf(id) >= 0;
   }
 
@@ -846,9 +998,12 @@
       return '<section class="question-context-bar overview"><div><strong>已接入 ' + Object.keys(questionBank).length + ' 个已核验 ItemUnit</strong><span>其余本地整卷仍是候选源，尚未逐题拆解和教研复核。</span></div><button class="primary-button" data-action="open-library">浏览真题、路径与修补</button></section>';
     }
     var q = questionBank[state.question];
+    var pathScope = state.activePathLabel
+      ? '<span class="unit-path-context-label">题内小路径 · ' + esc(state.activePathLabel) + '</span>'
+      : '';
     return [
       '<section class="question-context-bar">',
-        '<div class="question-context-meta"><span class="exam-tag">' + esc(questionTag(q)) + '</span><div><strong>' + esc(q.title) + '</strong><span>' + esc(q.format + ' · ' + q.validation) + '</span></div></div>',
+        '<div class="question-context-meta"><span class="exam-tag">' + esc(questionTag(q)) + '</span><div>' + pathScope + '<strong>' + esc(q.title) + '</strong><span>' + esc(q.format + ' · ' + q.validation) + '</span></div></div>',
         '<div class="question-context-actions"><button class="primary-button" data-action="open-question" data-id="' + q.id + '">查看原题、解析与路径</button>' + sourceAction(q) + '</div>',
       '</section>'
     ].join('');
@@ -1150,10 +1305,14 @@
     return '<nav class="prototype-switcher" aria-label="原型方案切换"><button class="switch-arrow" data-action="prev-variant" aria-label="上一个方案">←</button><div class="switch-label"><strong>' + state.variant + ' — ' + esc(meta.name) + '</strong>' + esc(meta.note) + '</div><button class="switch-arrow" data-action="next-variant" aria-label="下一个方案">→</button></nav>';
   }
 
-  function pathMini(question) {
-    return question.path.map(function (step) {
+  function pathMiniSteps(path) {
+    return path.map(function (step) {
       return '<span class="path-mini-node" style="--node-color:' + layers[nodeById[step.node].layer].color + '">' + esc(nodeById[step.node].name) + '</span>';
     }).join('<span class="path-mini-arrow">→</span>');
+  }
+
+  function pathMini(question) {
+    return pathMiniSteps(question.path);
   }
 
   function questionLibrary() {
@@ -1162,17 +1321,19 @@
     var visibleIds = Object.keys(questionBank).filter(function (id) {
       if (!libraryQuery) return true;
       var q = questionBank[id];
-      return [id, q.year, q.province, q.number, q.format, q.title, questions[id].note].join(' ').toLowerCase().indexOf(libraryQuery) >= 0;
+      var unitKeywords = questionUnits(q).map(function (unit) { return unit.keyword; }).join(' ');
+      return [id, q.year, q.province, q.number, q.format, q.title, questions[id].note, unitKeywords].join(' ').toLowerCase().indexOf(libraryQuery) >= 0;
     });
     var cards = visibleIds.map(function (id) {
       var q = questionBank[id];
+      var unitCount = questionUnits(q).length;
       return [
         '<article class="question-library-card">',
           '<div class="question-library-meta"><span class="exam-tag">' + esc(questionTag(q)) + '</span><span>' + esc(q.format) + '</span></div>',
           '<h3>' + esc(q.title) + '</h3>',
           '<p>' + esc(questions[id].note) + '</p>',
           '<div class="question-card-path">' + pathMini(q) + '</div>',
-          '<div class="question-card-footer"><span>' + q.path.length + ' 步路径 · ' + q.gaps.length + ' 个候选断连</span><div><button class="ghost-button" data-action="highlight-question" data-id="' + id + '">只高亮路径</button> <button class="primary-button" data-action="open-question" data-id="' + id + '">打开题目</button></div></div>',
+          '<div class="question-card-footer"><span>' + q.path.length + ' 步整题路径 · ' + unitCount + ' 个题内路径 · ' + q.gaps.length + ' 个候选断连</span><div><button class="ghost-button" data-action="highlight-question" data-id="' + id + '">只高亮路径</button> <button class="primary-button" data-action="open-question" data-id="' + id + '">打开题目</button></div></div>',
         '</article>'
       ].join('');
     }).join('');
@@ -1181,13 +1342,26 @@
   }
 
   function renderOriginal(question) {
+    var units = questionUnits(question);
     var stem = question.stem.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
-    var options = question.options.length ? '<div class="original-options">' + question.options.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>' : '';
+    var options = question.options.length ? '<div class="original-options">' + question.options.map(function (p, index) {
+      var unit = units.filter(function (candidate) { return candidate.kind === 'option' && candidate.optionIndex === index; })[0];
+      return '<article class="original-option-card"><p>' + esc(p) + '</p>' + (unit
+        ? '<button class="option-path-entry" data-action="open-unit-path" data-key="' + esc(unit.key) + '"><span>解题关键词</span><strong>' + esc(unit.keyword) + '</strong><small>查看该选项的单独路径 →</small></button>'
+        : '') + '</article>';
+    }).join('') + '</div>' : '';
     var figure = question.image ? '<figure class="original-figure"><img src="' + esc(question.image) + '" alt="' + esc(question.imageAlt) + '"><figcaption>源 PDF 题图裁切；文字题干与选项在本页单独转写。</figcaption></figure>' : '';
+    var family = questionFamily(question);
+    var launchers = !question.options.length || family.length > 1
+      ? '<section class="inline-unit-launchers"><header><div><span>题内路径入口</span><strong>' + (family.length > 1 ? '这张原题图已拆出 ' + family.length + ' 个氧化还原小问' : '当前 ItemUnit 的最小任务') + '</strong></div><small>点击关键词，只看该小问的路径</small></header><div>' + units.map(function (unit) {
+        return '<button data-action="open-unit-path" data-key="' + esc(unit.key) + '"><span>' + esc(unit.label) + '</span><strong>' + esc(unit.keyword) + '</strong><small>' + esc(unit.title) + '</small></button>';
+      }).join('') + '</div></section>'
+      : '';
     return [
       '<section class="question-tab-panel">',
-        '<div class="private-study-note">' + esc(usageNotice()) + '</div>',
+        '<div class="private-study-note">' + esc(usageNotice()) + ' 页面中的“解题关键词”可直接打开选项或小问路径。</div>',
         '<div class="original-question">' + stem + figure + options + '</div>',
+        launchers,
         '<div class="answer-gate"><span>先让学生作答时，不展开“材料答案与解析”标签。</span><button class="ghost-button" data-action="question-tab" data-id="analysis">查看答案与解析</button></div>',
       '</section>'
     ].join('');
@@ -1203,14 +1377,44 @@
     ].join('');
   }
 
+  function renderPathTimeline(path) {
+    return '<div class="path-timeline">' + path.map(function (step, index) {
+      var node = nodeById[step.node];
+      return '<article class="path-step"><button class="path-step-node" style="--node-color:' + layers[node.layer].color + '" data-action="select-node" data-id="' + node.id + '"><span>' + node.id + '</span><strong>' + esc(node.name) + '</strong></button><div class="path-step-body"><span>Step ' + (index + 1) + '</span><h4>' + esc(step.action) + '</h4><p><strong>中间结论：</strong>' + esc(step.result) + '</p><p class="path-check"><strong>自检：</strong>' + esc(step.check) + '</p></div></article>';
+    }).join('') + '</div>';
+  }
+
+  function renderUnitPaths(question) {
+    var units = questionUnits(question);
+    var active = unitByKey(question, state.activeUnitKey);
+    var navigation = units.map(function (unit) {
+      return '<button class="unit-path-nav-item ' + (unit.key === active.key ? 'active' : '') + '" data-action="select-unit-path" data-key="' + esc(unit.key) + '"><span>' + esc(unit.label) + '</span><strong>' + esc(unit.keyword) + '</strong><small>' + esc(unit.title) + '</small></button>';
+    }).join('');
+    var pathContent = active.path.length
+      ? '<div class="unit-path-overview"><span>该单元实际调用 ' + active.path.length + ' 个步骤</span><div class="path-overview">' + pathMiniSteps(active.path) + '</div></div>' + renderPathTimeline(active.path)
+      : '<div class="unit-outside-map"><strong>当前氧化还原图不展开这个选项</strong><p>' + esc(active.outside) + '</p><span>这是有意保留的边界：不因为它出现在同一道题中，就强行给它连一条氧化还原路径。</span></div>';
+    return [
+      '<section class="question-tab-panel unit-path-panel">',
+        '<div class="unit-path-principle"><strong>整题路径 ≠ 每个小问都调用全部节点。</strong><span>选中一个关键词后，只显示该选项或小问实际需要的已复核步骤。</span></div>',
+        '<div class="unit-path-layout">',
+          '<nav class="unit-path-nav"><header><span>' + (units[0].kind === 'subquestion' ? '同一大题的小问' : '题内判定单元') + '</span><strong>' + units.length + ' 个可查路径</strong></header>' + navigation + '</nav>',
+          '<article class="unit-path-detail">',
+            '<header><div><span>' + esc(active.label) + ' · 路径入口关键词</span><h3>' + esc(active.keyword) + '</h3></div><span class="unit-kind-badge">' + (active.kind === 'option' ? '选项级' : active.kind === 'subquestion' ? '小问级' : 'ItemUnit 级') + '</span></header>',
+            '<div class="unit-prompt"><span>本单元题面</span><p>' + esc(active.prompt) + '</p></div>',
+            '<div class="unit-reviewed-result"><span>已核对的判定依据</span><p>' + esc(active.explanation) + '</p><small>' + esc(active.sourceNote) + '</small></div>',
+            pathContent,
+            '<div class="unit-path-actions">' + (active.path.length ? '<button class="primary-button" data-action="highlight-unit-path" data-key="' + esc(active.key) + '">在知识图中只高亮这条小路径</button>' : '') + (active.kind === 'subquestion' && active.questionId !== question.id ? '<button class="ghost-button" data-action="open-unit-question" data-id="' + active.questionId + '">打开该小问的原题与解析</button>' : '') + '</div>',
+          '</article>',
+        '</div>',
+      '</section>'
+    ].join('');
+  }
+
   function renderQuestionPath(question) {
     return [
       '<section class="question-tab-panel">',
         '<div class="path-overview">' + pathMini(question) + '</div>',
-        '<div class="path-timeline">' + question.path.map(function (step, index) {
-          var node = nodeById[step.node];
-          return '<article class="path-step"><button class="path-step-node" style="--node-color:' + layers[node.layer].color + '" data-action="select-node" data-id="' + node.id + '"><span>' + node.id + '</span><strong>' + esc(node.name) + '</strong></button><div class="path-step-body"><span>Step ' + (index + 1) + '</span><h4>' + esc(step.action) + '</h4><p><strong>中间结论：</strong>' + esc(step.result) + '</p><p class="path-check"><strong>自检：</strong>' + esc(step.check) + '</p></div></article>';
-        }).join('') + '</div>',
+        renderPathTimeline(question.path),
         '<button class="primary-button" data-action="highlight-question" data-id="' + question.id + '">在知识图中高亮这条路径</button>',
       '</section>'
     ].join('');
@@ -1242,22 +1446,33 @@
     if (!state.openQuestionId) return '';
     var question = questionBank[state.openQuestionId];
     if (!question) return '';
+    var family = questionFamily(question);
+    var showingFamilyPaths = state.questionTab === 'unitpath' && family.length > 1;
+    var drawerTag = showingFamilyPaths
+      ? '(' + question.year + '·' + question.province + ') ' + question.number.split('（')[0] + ' · 小问组'
+      : questionTag(question);
+    var drawerTitle = showingFamilyPaths ? '同一综合题的 ' + family.length + ' 条小问路径' : question.title;
+    var drawerNote = showingFamilyPaths
+      ? '共用同一张完整题面的小问组；每个小问保留独立答案、路径和候选断连。'
+      : question.validation + ' · ' + question.usage;
     var tabs = [
       { id: 'original', name: '原题' },
       { id: 'analysis', name: '答案与解析' },
-      { id: 'path', name: '解题路径' },
+      { id: 'unitpath', name: '题内小路径' },
+      { id: 'path', name: '整题路径' },
       { id: 'repair', name: '断连与最小修补' }
     ].map(function (tab) {
       return '<button class="question-tab ' + (state.questionTab === tab.id ? 'active' : '') + '" data-action="question-tab" data-id="' + tab.id + '">' + tab.name + '</button>';
     }).join('');
     var body = state.questionTab === 'analysis' ? renderAnalysis(question)
+      : state.questionTab === 'unitpath' ? renderUnitPaths(question)
       : state.questionTab === 'path' ? renderQuestionPath(question)
       : state.questionTab === 'repair' ? renderRepairs(question)
       : renderOriginal(question);
     return [
       '<div class="question-drawer-overlay" data-action="close-question">',
         '<aside class="question-drawer">',
-          '<header class="question-drawer-head"><div><div class="question-library-meta"><span class="exam-tag">' + esc(questionTag(question)) + '</span><span>' + esc(question.score + ' · ' + question.format) + '</span></div><h2>' + esc(question.title) + '</h2><p>' + esc(question.validation) + ' · ' + esc(question.usage) + '</p></div><div class="drawer-actions">' + sourceAction(question) + '<button class="icon-button" data-action="close-question">×</button></div></header>',
+          '<header class="question-drawer-head"><div><div class="question-library-meta"><span class="exam-tag">' + esc(drawerTag) + '</span><span>' + esc(question.score + ' · ' + question.format) + '</span></div><h2>' + esc(drawerTitle) + '</h2><p>' + esc(drawerNote) + '</p></div><div class="drawer-actions">' + sourceAction(question) + '<button class="icon-button" data-action="close-question">×</button></div></header>',
           '<nav class="question-tabs">' + tabs + '</nav>',
           '<div class="question-drawer-body">' + body + '</div>',
         '</aside>',
@@ -1276,6 +1491,8 @@
       selected: { kind: state.selectedKind, id: state.selectedId },
       open_question: state.openQuestionId,
       question_tab: state.questionTab,
+      active_question_unit: state.activeUnitKey,
+      active_subpath: state.activePathNodeIds ? { label: state.activePathLabel, nodes: state.activePathNodeIds, edges: state.activePathEdgeIds } : null,
       active_candidate_gap: state.activeGapId,
       graph_view: { zoom: state.graphZoom, pan_x: state.graphPanX, pan_y: state.graphPanY },
       evidence_overlay: Object.keys(state.evidence).filter(function (id) { return state.evidence[id] !== 'unobserved'; }).reduce(function (acc, id) { acc[id] = state.evidence[id]; return acc; }, {}),
@@ -1388,7 +1605,13 @@
         if (action === 'select-node') { state.selectedKind = 'node'; state.selectedId = el.getAttribute('data-id'); if (el.closest('.question-drawer')) state.openQuestionId = null; render(); }
         else if (action === 'select-edge') { state.selectedKind = 'edge'; state.selectedId = el.getAttribute('data-id'); render(); }
         else if (action === 'layer') { state.layer = el.getAttribute('data-id'); render(); }
-        else if (action === 'question') { state.question = el.getAttribute('data-id'); render(); }
+        else if (action === 'question') {
+          state.question = el.getAttribute('data-id');
+          state.activePathNodeIds = null;
+          state.activePathEdgeIds = null;
+          state.activePathLabel = '';
+          render();
+        }
         else if (action === 'evidence') { state.evidence[el.getAttribute('data-node')] = el.getAttribute('data-id'); render(); }
         else if (action === 'open-library') { state.showQuestionLibrary = true; render(); }
         else if (action === 'close-library') {
@@ -1398,6 +1621,10 @@
           state.openQuestionId = el.getAttribute('data-id');
           state.question = state.openQuestionId;
           state.questionTab = 'original';
+          state.activeUnitKey = null;
+          state.activePathNodeIds = null;
+          state.activePathEdgeIds = null;
+          state.activePathLabel = '';
           state.activeGapId = null;
           state.showQuestionLibrary = false;
           render();
@@ -1406,8 +1633,37 @@
           if (event.target === el || el.tagName === 'BUTTON') { state.openQuestionId = null; render(); }
         }
         else if (action === 'question-tab') { state.questionTab = el.getAttribute('data-id'); render(); }
+        else if (action === 'open-unit-path' || action === 'select-unit-path') {
+          state.activeUnitKey = el.getAttribute('data-key');
+          state.questionTab = 'unitpath';
+          render();
+        }
+        else if (action === 'open-unit-question') {
+          state.openQuestionId = el.getAttribute('data-id');
+          state.question = state.openQuestionId;
+          state.questionTab = 'original';
+          state.activeUnitKey = null;
+          state.activePathNodeIds = null;
+          state.activePathEdgeIds = null;
+          state.activePathLabel = '';
+          render();
+        }
+        else if (action === 'highlight-unit-path') {
+          var unitQuestion = questionBank[state.openQuestionId];
+          var unit = unitByKey(unitQuestion, el.getAttribute('data-key'));
+          state.question = unit.questionId;
+          state.activePathNodeIds = unit.path.map(function (step) { return step.node; }).filter(function (id, index, list) { return list.indexOf(id) === index; });
+          state.activePathEdgeIds = edgeIdsForPath(unit.path);
+          state.activePathLabel = unit.label + ' · ' + unit.keyword;
+          state.openQuestionId = null;
+          state.showQuestionLibrary = false;
+          render();
+        }
         else if (action === 'highlight-question') {
           state.question = el.getAttribute('data-id');
+          state.activePathNodeIds = null;
+          state.activePathEdgeIds = null;
+          state.activePathLabel = '';
           state.openQuestionId = null;
           state.showQuestionLibrary = false;
           render();
@@ -1419,6 +1675,9 @@
           state.activeGapId = qid + ':' + gapIndex;
           state.evidence[gap.node] = 'candidate_gap';
           state.question = qid;
+          state.activePathNodeIds = null;
+          state.activePathEdgeIds = null;
+          state.activePathLabel = '';
           state.questionTab = 'repair';
           render();
         }
