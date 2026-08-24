@@ -763,6 +763,181 @@
     ]
   };
 
+  var pathArchetypes = [
+    {
+      id: 'T1', name: '价态—反应角色判定', short: '价态角色', color: '#d46b3c',
+      summary: '从同一元素的反应前后载体出发，先判价态变化，再命名氧化、还原及试剂角色。',
+      cues: ['氧化剂/还原剂', '氧化性/还原性', '氧化产物/还原产物'],
+      backbone: [
+        { node: 'O1', action: '锁定具体反应阶段和待判对象' },
+        { node: 'O3', action: '把同一元素的反应前后载体对齐' },
+        { node: 'R4', action: '比较氧化数的升高、降低或不变' },
+        { node: 'C3', action: '由实际得失电子命名试剂角色' }
+      ],
+      branches: [
+        { label: '价态升高', route: ['C1','A2'], note: '失去形式电子当量，该物质是还原剂。' },
+        { label: '价态降低', route: ['C2','A1'], note: '得到形式电子当量，该物质是氧化剂。' },
+        { label: '价态不变', route: ['A3','B4'], note: '不能只因物质名称就强行贴角色标签。' }
+      ],
+      boundary: '角色只属于这一个具体反应；“常见氧化剂”不代表在任何情境中都是氧化剂。',
+      probe: '只追踪题中该物质实际改变的元素：它反应前后的氧化数分别是多少？',
+      repair: '只画“反应前载体—氧化数箭头—反应后载体”两行，暂不写完整方程式。',
+      match: function (question, nodeIds) { return ['A1','A2','C3','C4','C5'].some(function (id) { return nodeIds.indexOf(id) >= 0; }); }
+    },
+    {
+      id: 'T2', name: '陌生方程式与半反应配平', short: '方程配平', color: '#367c6a',
+      summary: '先确定实际变化粒子和价态差，再用电子、原子与电荷守恒完成方程式。',
+      cues: ['书写半反应', '离子方程式正误', '陌生产物配平'],
+      backbone: [
+        { node: 'O2', action: '确定当前介质中的实际粒子' },
+        { node: 'O3', action: '对齐变化元素的前后载体' },
+        { node: 'R4', action: '由氧化数差得到每粒子电子差' },
+        { node: 'Q3', action: '令总失电子数与总得电子数相等' },
+        { node: 'Q5', action: '配平并逐项检查原子、电荷和电子' },
+        { node: 'Q6', action: '用酸碱介质和题给条件限定实际形式' }
+      ],
+      branches: [
+        { label: '净离子方程式', route: ['X1'], note: '先移除旁观离子，但弱电解质不能机械拆分。' },
+        { label: '电极半反应', route: ['X2'], note: '先定阴阳极和电子所在一侧，再完成电荷检查。' },
+        { label: '反应可行性', route: ['B2'], note: '守恒只是必要条件，不能由“可配平”推出“必发生”。' }
+      ],
+      boundary: '配平程序不能自动创造题目没有给出的产物，产物与介质必须有反应事实支持。',
+      probe: '不配完式，只说变化中心每份得或失几个电子，两边最小公倍是多少？',
+      repair: '只配一支半反应，固定按“中心元素→O→H→电荷”四次检查。',
+      match: function (question, nodeIds, text) { return nodeIds.indexOf('Q5') >= 0 && (/方程|配平|半反应/.test(text) || nodeIds.indexOf('Q3') >= 0); }
+    },
+    {
+      id: 'T3', name: '电化学方向、电极与迁移', short: '电化学方向', color: '#3479a7',
+      summary: '从电极上的实际物质变化出发，依次确定氧化/还原、阴阳极、电子方向与离子迁移。',
+      cues: ['充电/放电', '阴极/阳极', '电子或离子迁移'],
+      backbone: [
+        { node: 'O3', action: '读出两极实际变化的前后载体' },
+        { node: 'R4', action: '根据价态变化判定氧化或还原' },
+        { node: 'X2', action: '用“阴极还原、阳极氧化”命名电极' },
+        { node: 'X3', action: '外电路电子从氧化的阳极流向还原的阴极' },
+        { node: 'X4', action: '结合膜类型、电极反应和电中性判断离子迁移' }
+      ],
+      branches: [
+        { label: '半反应书写', route: ['Q5','Q6'], note: '电极定位后再配原子、电荷和介质粒子。' },
+        { label: '电量与物料计算', route: ['X5','Q4','Q7'], note: '先经电子物质的量这座桥，不直接把电量对应到任意物质。' },
+        { label: 'pH 或溶液变化', route: ['Q6','Q7'], note: '从半反应中实际生成/消耗的 H+、OH- 和溶剂出发。' }
+      ],
+      boundary: '正负极会随原电池/电解池以及充放电状态改变；阴阳极才是由氧化还原定义的稳定名称。',
+      probe: '先不问正负极：题给状态下，哪一极的哪个物质在得电子？',
+      repair: '只做四组“物质变化→氧化/还原→阳/阴极”三步映射，暂不算电势与定量。',
+      match: function (question, nodeIds) { return nodeIds.indexOf('X2') >= 0; }
+    },
+    {
+      id: 'T4', name: '电子当量与氧化还原定量', short: '电子当量', color: '#8c66b8',
+      summary: '把价态差、粒子个数和反应份数合成一批电子，再连到目标物质的量。',
+      cues: ['转移电子数', '质量/体积/含量', '电量与滴定计算'],
+      backbone: [
+        { node: 'O3', action: '对齐定量中心的前后载体' },
+        { node: 'Q1', action: '求每个变价原子的电子差' },
+        { node: 'Q2', action: '乘原子数与物质份数，但不重复计数两极同一批电子' },
+        { node: 'Q4', action: '建立电子与目标物质的计量比' },
+        { node: 'Q7', action: '最后换算质量、体积、浓度或百分含量' }
+      ],
+      branches: [
+        { label: '外电路电量', route: ['X5'], note: '用 Q=n(e-)F 先得电子物质的量。' },
+        { label: '滴定计量', route: ['Q5','Q6'], note: '标准液经半反应电子当量连到待测物。' },
+        { label: '多中心或平均价', route: ['R5'], note: '先分清总电子差与平均价，再进入物质的量。' }
+      ],
+      boundary: '系数比只能在同一反应进度中使用；不能把某个物质的系数孤立当成电子数。',
+      probe: '请只写一组反应同时对应几 mol e- 和几 mol 目标物，不代入数字。',
+      repair: '画一张两列表：左列只写 n(e-)，右列只写目标物质，仅填一组反应的对应量。',
+      match: function (question, nodeIds) {
+        var hasQuantBridge = nodeIds.indexOf('Q4') >= 0 && ['Q1','Q2','Q3','Q7','X5'].some(function (id) { return nodeIds.indexOf(id) >= 0; });
+        var isDirectElectronCount = nodeIds.indexOf('Q1') >= 0 && nodeIds.indexOf('Q2') >= 0;
+        return hasQuantBridge || isDirectElectronCount;
+      }
+    },
+    {
+      id: 'T5', name: '实验现象—微观结论证据链', short: '实验证据', color: '#c18d22',
+      summary: '先确认实际发生颜色、气体、沉淀或指示变化的物种，再逐层连到价态和反应结论。',
+      cues: ['颜色、气体、沉淀', '对照实验', '现象能否证明'],
+      backbone: [
+        { node: 'O1', action: '明确题目要求证明的结论强度' },
+        { node: 'X8', action: '记录实际观察到的现象，不先写推断' },
+        { node: 'O2', action: '确定直接发生现象的实际物种' },
+        { node: 'O3', action: '对齐该物种变化前后的载体' },
+        { node: 'R4', action: '用价态变化支持或否定氧化还原解释' }
+      ],
+      branches: [
+        { label: '试剂性质', route: ['A1','A2'], note: '现象只能在变价链完整时支持氧化性或还原性。' },
+        { label: '实验条件与对照', route: ['Q6'], note: '检查浓度、介质、温度、加热和空白组。' },
+        { label: '结论边界', route: ['B2','X7'], note: '单一现象可能有竞争解释，不能越级推出唯一机理。' }
+      ],
+      boundary: '现象是证据而不是自带唯一含义的标签；必须同时保留条件、对照和竞争解释。',
+      probe: '这个颜色、气体或沉淀是哪个具体物种直接产生的？还有没有另一种可能原因？',
+      repair: '只写三格：“观察到什么→直接物种是谁→最多能支持什么结论”。',
+      match: function (question, nodeIds) { return nodeIds.indexOf('X8') >= 0; }
+    },
+    {
+      id: 'T6', name: '工业流程中的载体、价态与试剂作用', short: '工业流程', color: '#6f7d35',
+      summary: '沿流程箭头追踪目标元素的载体和价态，再判断各试剂是转化、保护、介质还是分离用途。',
+      cues: ['浸取—转化—分离', '试剂的作用', '目标元素收率'],
+      backbone: [
+        { node: 'X9', action: '确定流程的目标元素和最终载体' },
+        { node: 'O3', action: '沿每个箭头对齐目标元素的前后载体' },
+        { node: 'R4', action: '检查关键转化步骤是否变价' },
+        { node: 'C3', action: '由实际变化判断试剂的氧化还原角色' },
+        { node: 'Q6', action: '用介质、浓度、温度和后续分离要求核对条件' }
+      ],
+      branches: [
+        { label: '书写关键反应', route: ['Q5'], note: '只对已确定的实际转化粒子配方程式。' },
+        { label: '检验与现象', route: ['X8'], note: '区分流程反应和后续检验反应。' },
+        { label: '电沉积/电解', route: ['X2'], note: '把溶液中的目标离子连到阴极还原和固体产物。' }
+      ],
+      boundary: '流程中的每一种试剂不一定都参加氧化还原；也可能只调介质、保护物种或提供分离条件。',
+      probe: '只追踪目标元素：加试剂前后它分别在哪个物种中，氧化数有没有变？',
+      repair: '在流程图下只画一条“目标元素载体链”，其他试剂先全部隐去。',
+      match: function (question, nodeIds) { return nodeIds.indexOf('X9') >= 0; }
+    },
+    {
+      id: 'T7', name: '歧化、归中与同元素多价态', short: '歧化归中', color: '#bb4e73',
+      summary: '先分开同一元素的不同来源或不同去向，再用价态数轴判断一分为二还是两端归中。',
+      cues: ['同一元素多价态', '中间价态', '歧化/归中'],
+      backbone: [
+        { node: 'O3', action: '标清同一元素的不同来源与去向' },
+        { node: 'R5', action: '区分平均价态和实际多中心价态' },
+        { node: 'R4', action: '把每一支的前后氧化数单独写出' },
+        { node: 'X6', action: '在价态数轴上识别歧化或归中箭头' },
+        { node: 'Q3', action: '用总升降相等检查两条支路' }
+      ],
+      branches: [
+        { label: '中间价分向两端', route: ['A1','A2'], note: '同一反应物同时承担氧化剂与还原剂角色。' },
+        { label: '高低价共同走向中间', route: ['Q5'], note: '分别计算高价降低和低价升高的电子差后配比。' },
+        { label: '条件限制', route: ['Q6'], note: '中间价产物是否稳定取决于介质与反应条件。' }
+      ],
+      boundary: '“一个反应物生成两个产物”不等于歧化；必须是同一元素的同一起始价态同时升高和降低。',
+      probe: '把题中该元素的所有起点价态和终点价态写在数轴上，箭头是一个起点分开，还是两个起点汇合？',
+      repair: '只画价态数轴和两支箭头，暂不写物质名称与方程式。',
+      match: function (question, nodeIds) { return nodeIds.indexOf('X6') >= 0; }
+    },
+    {
+      id: 'T8', name: '氧化还原滴定、终点与误差传递', short: '滴定误差', color: '#6e6460',
+      summary: '分开主反应、终点指示反应和读数换算，再沿“实际消耗→体积读数→回算结果”判断方向。',
+      cues: ['标准液与终点', '过量试剂干扰', '测定结果偏高/偏低'],
+      backbone: [
+        { node: 'O1', action: '锁定目标是终点、含量还是误差方向' },
+        { node: 'Q6', action: '按滴加时序区分主反应、竞争反应和指示反应' },
+        { node: 'X8', action: '把终点现象连到“某物质首次稳定过量”' },
+        { node: 'Q7', action: '区分反应体积、读数体积和最终换算量' },
+        { node: 'Q4', action: '经电子当量把滴定剂连到待测物' }
+      ],
+      branches: [
+        { label: '指示剂终点', route: ['X8'], note: '说清谁直接变色、为什么在当量点后才稳定出现。' },
+        { label: '竞争消耗与待测物损失', route: ['C3','Q6'], note: '先判断会使标准液多消耗还是少消耗。' },
+        { label: '滴定管与视线误差', route: ['R1','Q7'], note: '从刻度方向、气泡去处和读数差逐步传到结果。' }
+      ],
+      boundary: '不能只背“过量偏高”或“仰小俯大”；必须写出该操作改变了哪一个实际量，以及它如何进入回算公式。',
+      probe: '不说偏高或偏低，只先回答：这个操作使“真正参加反应的标准液”变多、变少还是不变？',
+      repair: '只画三箭头：“操作→实际消耗或读数 V ↑/↓→回算结果↑/↓”。',
+      match: function (question, nodeIds, text) { return /滴定|误差|偏高|偏低|终点/.test(text); }
+    }
+  ];
+
   var nodeById = {};
   var edgeById = {};
   var nodeLearningData = window.nodeLearningData || {};
@@ -849,6 +1024,33 @@
     }).map(function (edge) { return edge.id; });
   }
 
+  function questionSearchText(question) {
+    return [question.id, question.title, question.format, question.short]
+      .concat(question.stem || [], question.analysis || [])
+      .join(' ');
+  }
+
+  function archetypeNodeIds(archetype) {
+    return archetype.backbone.map(function (step) { return step.node; });
+  }
+
+  function questionsForArchetype(archetype) {
+    return Object.keys(questionBank).map(function (id) { return questionBank[id]; }).filter(function (question) {
+      var nodeIds = question.path.map(function (step) { return step.node; });
+      return archetype.match(question, nodeIds, questionSearchText(question));
+    });
+  }
+
+  function archetypesForQuestion(question) {
+    var nodeIds = question.path.map(function (step) { return step.node; });
+    var text = questionSearchText(question);
+    return pathArchetypes.filter(function (archetype) { return archetype.match(question, nodeIds, text); });
+  }
+
+  function archetypeById(id) {
+    return pathArchetypes.filter(function (archetype) { return archetype.id === id; })[0] || pathArchetypes[0];
+  }
+
   var initialVariant = new URL(window.location.href).searchParams.get('variant') || 'A';
   if (!variantMeta[initialVariant]) initialVariant = 'A';
 
@@ -868,6 +1070,9 @@
     evidence: {},
     showState: false,
     showQuestionLibrary: false,
+    showArchetypeLibrary: false,
+    activeArchetypeId: null,
+    highlightedArchetypeId: null,
     openQuestionId: null,
     questionTab: 'original',
     activeUnitKey: null,
@@ -953,6 +1158,7 @@
           '<span class="state-pill prototype-pill">PROTOTYPE</span>',
           '<span class="state-pill"><strong>' + nodes.length + '</strong> 节点</span>',
           '<span class="state-pill"><strong>' + edges.length + '</strong> 条连接</span>',
+          '<button class="ghost-button archetype-library-button" data-action="open-archetypes">题型路径 <strong>' + pathArchetypes.length + '</strong></button>',
           '<button class="ghost-button question-library-button" data-action="open-library">真题库 <strong>' + Object.keys(questionBank).length + '</strong></button>',
           '<a class="primary-button challenge-entry" href="./challenge.html">节点闯关</a>',
           '<span class="state-pill"><strong>' + observed + '</strong> 条证据标记</span>',
@@ -995,6 +1201,10 @@
 
   function questionContextBar() {
     if (state.question === 'all') {
+      if (state.highlightedArchetypeId && state.activePathNodeIds) {
+        var activeArchetype = archetypeById(state.highlightedArchetypeId);
+        return '<section class="question-context-bar archetype-context"><div class="question-context-meta"><span class="exam-tag" style="--archetype-color:' + activeArchetype.color + '">题型主干</span><div><span class="unit-path-context-label">' + esc(activeArchetype.id + ' · ' + activeArchetype.short) + '</span><strong>' + esc(activeArchetype.name) + '</strong><span>当前只高亮该题型的 ' + activeArchetype.backbone.length + ' 个主干节点；分支和具体题目在题型库中展开。</span></div></div><button class="primary-button" data-action="open-archetype" data-id="' + activeArchetype.id + '">重新打开题型总结</button></section>';
+      }
       return '<section class="question-context-bar overview"><div><strong>已接入 ' + Object.keys(questionBank).length + ' 个已核验 ItemUnit</strong><span>其余本地整卷仍是候选源，尚未逐题拆解和教研复核。</span></div><button class="primary-button" data-action="open-library">浏览真题、路径与修补</button></section>';
     }
     var q = questionBank[state.question];
@@ -1168,7 +1378,7 @@
       return '<rect class="layer-backdrop" x="' + backdropX[id] + '" y="4" width="' + backdropW[id] + '" height="800"></rect><text class="layer-caption" x="' + (backdropX[id] + 12) + '" y="28">' + esc(layers[id].name) + '</text>';
     }).join('');
     var edgeHtml = edges.map(function (e) {
-      var active = pathHasEdge(e.id) && state.question !== 'all';
+      var active = pathHasEdge(e.id) && (state.question !== 'all' || !!state.activePathNodeIds);
       var dim = edgeDimmed(e);
       var cls = 'edge-path' + (active ? ' active' : '') + (dim ? ' dimmed' : '');
       var d = curve(e);
@@ -1180,7 +1390,7 @@
     var nodeHtml = nodes.map(function (n) {
       var layer = layers[n.layer];
       var ev = currentEvidence(n.id);
-      var cls = 'graph-node' + (state.selectedKind === 'node' && state.selectedId === n.id ? ' active' : '') + (state.question !== 'all' && pathHasNode(n.id) ? ' path-active' : '') + (nodeDimmed(n) ? ' dimmed' : '');
+      var cls = 'graph-node' + (state.selectedKind === 'node' && state.selectedId === n.id ? ' active' : '') + ((state.question !== 'all' || state.activePathNodeIds) && pathHasNode(n.id) ? ' path-active' : '') + (nodeDimmed(n) ? ' dimmed' : '');
       return '<foreignObject class="node-foreign" x="' + n.x + '" y="' + n.y + '" width="146" height="70" data-action="select-node" data-id="' + n.id + '"><div xmlns="http://www.w3.org/1999/xhtml" class="' + cls + '" style="--node-color:' + layer.color + '"><div><div class="node-code">' + n.id + '</div><div class="node-name">' + esc(n.name) + '</div></div><span class="evidence-dot" style="--evidence-color:' + ev.color + '" title="' + esc(ev.name) + '"></span></div></foreignObject>';
     }).join('');
     return '<svg class="knowledge-svg" viewBox="0 0 1200 815" role="img" aria-label="氧化还原知识连接全景图"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#8f9b94"></path></marker></defs>' + backs + edgeHtml + nodeHtml + '</svg>';
@@ -1204,6 +1414,7 @@
           '</section>',
           '<aside class="side-panel right">' + detailPanel(false) + '</aside>',
         '</main>',
+        archetypeLibrary(),
         questionLibrary(),
         questionDrawer(),
         switcher(),
@@ -1216,7 +1427,7 @@
     var layer = layers[layerId];
     var laneNodes = nodes.filter(function (n) { return n.layer === layerId; });
     var stations = laneNodes.map(function (n) {
-      var cls = 'station' + (state.selectedKind === 'node' && state.selectedId === n.id ? ' active' : '') + (state.question !== 'all' && pathHasNode(n.id) ? ' path-active' : '') + (nodeDimmed(n) ? ' dimmed' : '');
+      var cls = 'station' + (state.selectedKind === 'node' && state.selectedId === n.id ? ' active' : '') + ((state.question !== 'all' || state.activePathNodeIds) && pathHasNode(n.id) ? ' path-active' : '') + (nodeDimmed(n) ? ' dimmed' : '');
       return '<div class="' + cls + '" data-action="select-node" data-id="' + n.id + '"><span class="station-dot"></span><div class="station-name">' + esc(n.name) + '</div><div class="station-code">' + n.id + '</div></div>';
     }).join('');
     return '<section class="metro-lane" style="--line-color:' + layer.color + '"><div class="line-name">' + esc(layer.name) + '</div><div class="stations">' + stations + '</div></section>';
@@ -1252,6 +1463,7 @@
             '<aside class="metro-detail">' + detailPanel(false) + '</aside>',
           '</section>',
         '</main>',
+        archetypeLibrary(),
         questionLibrary(),
         questionDrawer(),
         switcher(),
@@ -1292,6 +1504,7 @@
             '</div>',
           '</section>',
         '</main>',
+        archetypeLibrary(),
         questionLibrary(),
         questionDrawer(),
         switcher(),
@@ -1313,6 +1526,66 @@
 
   function pathMini(question) {
     return pathMiniSteps(question.path);
+  }
+
+  function archetypeRouteHtml(nodeIds) {
+    return nodeIds.map(function (id) {
+      var node = nodeById[id];
+      return '<span class="archetype-route-node" style="--node-color:' + layers[node.layer].color + '"><small>' + id + '</small><strong>' + esc(node.name) + '</strong></span>';
+    }).join('<span class="archetype-route-arrow">→</span>');
+  }
+
+  function renderArchetypeOverview() {
+    var cards = pathArchetypes.map(function (archetype) {
+      var matched = questionsForArchetype(archetype);
+      return [
+        '<article class="archetype-card" style="--archetype-color:' + archetype.color + '">',
+          '<header><span>' + archetype.id + '</span><strong>' + matched.length + ' 道已核验题支持</strong></header>',
+          '<h3>' + esc(archetype.name) + '</h3>',
+          '<p>' + esc(archetype.summary) + '</p>',
+          '<div class="archetype-cues">' + archetype.cues.map(function (cue) { return '<span>' + esc(cue) + '</span>'; }).join('') + '</div>',
+          '<div class="archetype-card-route">' + archetypeRouteHtml(archetypeNodeIds(archetype)) + '</div>',
+          '<footer><span>主干 ' + archetype.backbone.length + ' 节点 · 常见分支 ' + archetype.branches.length + '</span><button class="primary-button" data-action="open-archetype" data-id="' + archetype.id + '">展开题型路径</button></footer>',
+        '</article>'
+      ].join('');
+    }).join('');
+    return [
+      '<div class="archetype-overview">',
+        '<section class="archetype-hero"><div><span class="prototype-label">PATH ARCHETYPE LIBRARY / PROTOTYPE</span><h2>题型不是题目名称，而是可重复调用的连接模板</h2><p>每道题可以同时属于多个题型。这里统计的是“哪条路径被调用”，不是按试卷章节把题目只塞进一个筐子。</p></div><div class="archetype-hero-stats"><strong>' + pathArchetypes.length + '</strong><span>类题型路径</span><strong>' + Object.keys(questionBank).length + '</strong><span>个已核验 ItemUnit 作为证据</span></div></section>',
+        '<div class="archetype-grid">' + cards + '</div>',
+      '</div>'
+    ].join('');
+  }
+
+  function renderArchetypeDetail(archetype) {
+    var matched = questionsForArchetype(archetype);
+    var steps = archetype.backbone.map(function (step, index) {
+      var node = nodeById[step.node];
+      return '<article class="archetype-step" style="--node-color:' + layers[node.layer].color + '"><button data-action="inspect-archetype-node" data-id="' + node.id + '"><span>' + node.id + '</span><strong>' + esc(node.name) + '</strong></button><div><small>STEP ' + (index + 1) + '</small><p>' + esc(step.action) + '</p></div></article>';
+    }).join('');
+    var branches = archetype.branches.map(function (branch) {
+      return '<article class="archetype-branch"><header><span>常见分支</span><strong>' + esc(branch.label) + '</strong></header><div>' + archetypeRouteHtml(branch.route) + '</div><p>' + esc(branch.note) + '</p></article>';
+    }).join('');
+    var questionsHtml = matched.map(function (question) {
+      return '<button class="archetype-question" data-action="open-question" data-id="' + question.id + '"><span>' + esc(questionTag(question)) + '</span><strong>' + esc(question.title) + '</strong><small>' + esc(question.short || question.format) + ' · ' + question.path.length + ' 步整题路径</small></button>';
+    }).join('');
+    return [
+      '<div class="archetype-detail" style="--archetype-color:' + archetype.color + '">',
+        '<button class="archetype-back" data-action="archetype-overview">← 返回全部题型</button>',
+        '<header class="archetype-detail-head"><div><span>' + archetype.id + ' · ' + esc(archetype.short) + '</span><h2>' + esc(archetype.name) + '</h2><p>' + esc(archetype.summary) + '</p></div><div><strong>' + matched.length + '</strong><span>道当前真题调用</span></div></header>',
+        '<section class="archetype-signal-panel"><strong>看见这些任务信号</strong><div>' + archetype.cues.map(function (cue) { return '<span>' + esc(cue) + '</span>'; }).join('') + '</div></section>',
+        '<section class="archetype-backbone"><header><div><span>STABLE BACKBONE</span><h3>题型的稳定主干</h3></div><button class="primary-button" data-action="highlight-archetype" data-id="' + archetype.id + '">在知识图中高亮主干</button></header><div class="archetype-route-large">' + archetypeRouteHtml(archetypeNodeIds(archetype)) + '</div><div class="archetype-step-list">' + steps + '</div></section>',
+        '<section><div class="archetype-section-title"><span>VARIABLE BRANCHES</span><h3>题面改变后常见的分支</h3></div><div class="archetype-branch-grid">' + branches + '</div></section>',
+        '<section class="archetype-diagnosis-grid"><article><span>适用边界</span><p>' + esc(archetype.boundary) + '</p></article><article><span>最小诊断问题</span><p>' + esc(archetype.probe) + '</p></article><article><span>最小修补动作</span><p>' + esc(archetype.repair) + '</p></article></section>',
+        '<section class="archetype-question-section"><div class="archetype-section-title"><span>EVIDENCE FROM QUESTIONS</span><h3>当前 ' + matched.length + ' 道真题如何调用这类路径</h3><p>点击题目可继续查看题内小路径、整题路径和断连修补。</p></div><div class="archetype-question-grid">' + questionsHtml + '</div></section>',
+      '</div>'
+    ].join('');
+  }
+
+  function archetypeLibrary() {
+    if (!state.showArchetypeLibrary) return '';
+    var content = state.activeArchetypeId ? renderArchetypeDetail(archetypeById(state.activeArchetypeId)) : renderArchetypeOverview();
+    return '<div class="archetype-library-overlay" data-action="close-archetypes"><section class="archetype-library-modal"><header><div><span class="eyebrow">题型—路径—真题证据</span><strong>氧化还原题型路径库</strong></div><button class="icon-button" data-action="close-archetypes">×</button></header><div class="archetype-library-body">' + content + '</div></section></div>';
   }
 
   function questionLibrary() {
@@ -1411,8 +1684,13 @@
   }
 
   function renderQuestionPath(question) {
+    var matchedArchetypes = archetypesForQuestion(question);
+    var archetypeLinks = matchedArchetypes.length
+      ? '<section class="question-archetype-links"><header><span>从单题回到题型</span><strong>这道题调用 ' + matchedArchetypes.length + ' 类共通路径</strong></header><div>' + matchedArchetypes.map(function (archetype) { return '<button style="--archetype-color:' + archetype.color + '" data-action="open-archetype" data-id="' + archetype.id + '"><span>' + archetype.id + '</span><strong>' + esc(archetype.short) + '</strong></button>'; }).join('') + '</div></section>'
+      : '<div class="question-archetype-empty">当前 8 类题型主干还不能稳定概括这道题，先保留单题路径，不强行归类。</div>';
     return [
       '<section class="question-tab-panel">',
+        archetypeLinks,
         '<div class="path-overview">' + pathMini(question) + '</div>',
         renderPathTimeline(question.path),
         '<button class="primary-button" data-action="highlight-question" data-id="' + question.id + '">在知识图中高亮这条路径</button>',
@@ -1492,6 +1770,7 @@
       open_question: state.openQuestionId,
       question_tab: state.questionTab,
       active_question_unit: state.activeUnitKey,
+      archetype_library: { open: state.showArchetypeLibrary, selected: state.activeArchetypeId, highlighted: state.highlightedArchetypeId },
       active_subpath: state.activePathNodeIds ? { label: state.activePathLabel, nodes: state.activePathNodeIds, edges: state.activePathEdgeIds } : null,
       active_candidate_gap: state.activeGapId,
       graph_view: { zoom: state.graphZoom, pan_x: state.graphPanX, pan_y: state.graphPanY },
@@ -1610,9 +1889,36 @@
           state.activePathNodeIds = null;
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
+          state.activeArchetypeId = null;
+          state.highlightedArchetypeId = null;
           render();
         }
         else if (action === 'evidence') { state.evidence[el.getAttribute('data-node')] = el.getAttribute('data-id'); render(); }
+        else if (action === 'open-archetypes') { state.showArchetypeLibrary = true; state.activeArchetypeId = null; render(); }
+        else if (action === 'open-archetype') { state.showArchetypeLibrary = true; state.activeArchetypeId = el.getAttribute('data-id'); render(); }
+        else if (action === 'archetype-overview') { state.activeArchetypeId = null; render(); }
+        else if (action === 'close-archetypes') {
+          if (event.target === el || el.tagName === 'BUTTON') { state.showArchetypeLibrary = false; render(); }
+        }
+        else if (action === 'highlight-archetype') {
+          var archetype = archetypeById(el.getAttribute('data-id'));
+          var archetypeNodes = archetypeNodeIds(archetype);
+          state.question = 'all';
+          state.activeArchetypeId = archetype.id;
+          state.highlightedArchetypeId = archetype.id;
+          state.activePathNodeIds = archetypeNodes;
+          state.activePathEdgeIds = edgeIdsForPath(archetypeNodes.map(function (id) { return { node: id }; }));
+          state.activePathLabel = '题型主干 · ' + archetype.name;
+          state.showArchetypeLibrary = false;
+          state.openQuestionId = null;
+          render();
+        }
+        else if (action === 'inspect-archetype-node') {
+          state.selectedKind = 'node';
+          state.selectedId = el.getAttribute('data-id');
+          state.showArchetypeLibrary = false;
+          render();
+        }
         else if (action === 'open-library') { state.showQuestionLibrary = true; render(); }
         else if (action === 'close-library') {
           if (event.target === el || el.tagName === 'BUTTON') { state.showQuestionLibrary = false; render(); }
@@ -1625,8 +1931,11 @@
           state.activePathNodeIds = null;
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
+          state.activeArchetypeId = null;
+          state.highlightedArchetypeId = null;
           state.activeGapId = null;
           state.showQuestionLibrary = false;
+          state.showArchetypeLibrary = false;
           render();
         }
         else if (action === 'close-question') {
@@ -1646,6 +1955,8 @@
           state.activePathNodeIds = null;
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
+          state.activeArchetypeId = null;
+          state.highlightedArchetypeId = null;
           render();
         }
         else if (action === 'highlight-unit-path') {
@@ -1655,6 +1966,8 @@
           state.activePathNodeIds = unit.path.map(function (step) { return step.node; }).filter(function (id, index, list) { return list.indexOf(id) === index; });
           state.activePathEdgeIds = edgeIdsForPath(unit.path);
           state.activePathLabel = unit.label + ' · ' + unit.keyword;
+          state.activeArchetypeId = null;
+          state.highlightedArchetypeId = null;
           state.openQuestionId = null;
           state.showQuestionLibrary = false;
           render();
@@ -1664,6 +1977,8 @@
           state.activePathNodeIds = null;
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
+          state.activeArchetypeId = null;
+          state.highlightedArchetypeId = null;
           state.openQuestionId = null;
           state.showQuestionLibrary = false;
           render();
@@ -1678,6 +1993,8 @@
           state.activePathNodeIds = null;
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
+          state.activeArchetypeId = null;
+          state.highlightedArchetypeId = null;
           state.questionTab = 'repair';
           render();
         }
@@ -1733,6 +2050,7 @@
     if (event.key === 'Escape' && state.showState) { state.showState = false; render(); }
     else if (event.key === 'Escape' && state.openQuestionId) { state.openQuestionId = null; render(); }
     else if (event.key === 'Escape' && state.showQuestionLibrary) { state.showQuestionLibrary = false; render(); }
+    else if (event.key === 'Escape' && state.showArchetypeLibrary) { state.showArchetypeLibrary = false; render(); }
   });
 
   render();
