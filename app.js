@@ -935,8 +935,208 @@
       probe: '不说偏高或偏低，只先回答：这个操作使“真正参加反应的标准液”变多、变少还是不变？',
       repair: '只画三箭头：“操作→实际消耗或读数 V ↑/↓→回算结果↑/↓”。',
       match: function (question, nodeIds, text) { return /滴定|误差|偏高|偏低|终点/.test(text); }
+    },
+    {
+      id: 'T9', name: '氧化数赋值、平均价与结构推断', short: '价态计算', color: '#7659a6',
+      summary: '先确定粒子边界与总电荷，再用赋值规则求未知价态，并区分平均价、局部价态和形式电荷。',
+      cues: ['求氧化数', '平均化合价', '由结构或组成推断价态'],
+      backbone: [
+        { node: 'R1', action: '圈定参与代数和的完整粒子边界' },
+        { node: 'R5', action: '写出已知元素贡献与整体电荷的代数式' },
+        { node: 'R4', action: '得到目标元素的氧化数或平均氧化数' },
+        { node: 'B1', action: '检查是否把形式氧化数误当真实局域电荷' }
+      ],
+      branches: [
+        { label: '常规粒子赋值', route: ['R1','R5','R4'], note: '代数和等于粒子整体电荷。' },
+        { label: '平均价态', route: ['R5','R3'], note: '平均值不自动表示每个原子都处于同一局部状态。' },
+        { label: '特殊成键边界', route: ['R2','B1'], note: '过氧键、金属氢化物等先修改默认赋值规则。' }
+      ],
+      boundary: '氧化数计算是形式记账；只得到平均值时，不能无证据拆成唯一的整数价态组合。',
+      probe: '先不判断升降，只写出“各元素氧化数代数和＝粒子整体电荷”的式子。',
+      repair: '连续做三次“圈粒子边界→写代数和”，停止在列式，不进入反应角色判断。',
+      match: function (question, nodeIds, text) { return nodeIds.indexOf('R5') >= 0 && (/氧化数|化合价|价态|平均|过氧|超氧/.test(text) || nodeIds.indexOf('R1') >= 0); }
+    },
+    {
+      id: 'T10', name: '氧化还原强弱与反应可行性', short: '强弱可行性', color: '#347d76',
+      summary: '把“可能变价”与“在给定条件下能否发生”分开，再用反应事实、电势、介质或对照证据比较强弱。',
+      cues: ['氧化性/还原性强弱', '能否发生', '反应先后顺序'],
+      backbone: [
+        { node: 'O2', action: '写清待比较的具体物种而非只写元素名称' },
+        { node: 'Q6', action: '补齐介质、浓度、温度和产物条件' },
+        { node: 'X7', action: '调用反应事实或电势证据判断方向与强弱' },
+        { node: 'B3', action: '排除只按氧化数高低排序的伪规则' }
+      ],
+      branches: [
+        { label: '由已知反应比较', route: ['X8','X7'], note: '以真实反应方向建立相对强弱关系。' },
+        { label: '竞争反应顺序', route: ['Q6','X7'], note: '结合物种浓度与条件判断优先过程。' },
+        { label: '守恒式的边界', route: ['Q5','B2'], note: '方程可配平不等于反应在该条件下会发生。' }
+      ],
+      boundary: '强弱属于具体反应对和条件；跨物种比较不能只看最高价、含氧多少或熟悉名称。',
+      probe: '除了氧化数，本题给了哪条能够支持反应方向的事实、条件或电势证据？',
+      repair: '只做两物种的“具体反应对—条件—观察方向”比较，不背整张强弱顺序表。',
+      match: function (question, nodeIds, text) { return nodeIds.indexOf('X7') >= 0 || /氧化性.*强|还原性.*强|强弱|能否发生|先反应/.test(text); }
+    },
+    {
+      id: 'T11', name: '过氧化物与特殊氧化数边界', short: '特殊价态', color: '#c0644c',
+      summary: '识别过氧键、超氧结构或非常规氢化物，先修正默认赋值规则，再判断变化与角色。',
+      cues: ['H2O2/过氧化物', '超氧化物', '特殊氧化数'],
+      backbone: [
+        { node: 'R1', action: '判断物种是否含有需要特殊处理的结构单元' },
+        { node: 'R5', action: '使用该结构对应的特殊赋值规则' },
+        { node: 'R4', action: '得到实际参与变化的氧化数' },
+        { node: 'A3', action: '由具体产物判断其在本反应中的角色' }
+      ],
+      branches: [
+        { label: '被还原为低价产物', route: ['C2','A1'], note: '特殊物种在本反应中承担氧化剂角色。' },
+        { label: '被氧化为高价产物', route: ['C1','A2'], note: '同一物种也可能承担还原剂角色。' },
+        { label: '歧化', route: ['X6','C5'], note: '同一起始价态向高、低两侧同时变化。' }
+      ],
+      boundary: '“H2O2 是氧化剂”不是永久标签；必须根据它实际变成 O2、H2O 或其他产物再命名角色。',
+      probe: '该物种中的 O 当前按多少赋值，反应后变成什么含氧物种？',
+      repair: '只做三张 H2O2 去向卡：到 O2、到 H2O、同时两向；每张只写氧价变化和角色。',
+      match: function (question, nodeIds, text) { return /H2O2|过氧|超氧|过硫酸|O2\^?2-|O₂²/.test(text); }
+    },
+    {
+      id: 'T12', name: '金属腐蚀与电化学保护', short: '腐蚀防护', color: '#8b7434',
+      summary: '先确定金属失电子位置与电池构型，再判断腐蚀快慢、保护方式和电极材料变化。',
+      cues: ['腐蚀快慢', '牺牲阳极/外加电流', '镀层保护'],
+      backbone: [
+        { node: 'O2', action: '识别真正形成电化学回路的金属、介质和接触关系' },
+        { node: 'C1', action: '定位发生金属氧化溶解的位置' },
+        { node: 'X2', action: '把金属氧化映射为阳极过程' },
+        { node: 'X7', action: '结合材料活泼性与装置条件判断反应倾向' }
+      ],
+      branches: [
+        { label: '原电池加速腐蚀', route: ['X3','X4'], note: '电子通路和离子通路同时成立才构成持续腐蚀。' },
+        { label: '牺牲阳极保护', route: ['A2','X2'], note: '更易氧化的金属承担阳极并消耗。' },
+        { label: '外加电流保护', route: ['X2','X3'], note: '使被保护金属保持为发生还原的阴极。' }
+      ],
+      boundary: '只说“更活泼”不足以判断全部现象，还要检查是否接触、是否有电解质和回路是否闭合。',
+      probe: '在这套装置里，哪个金属原子真正变成了溶液中的离子？',
+      repair: '画一幅只含“阳极金属→电子→阴极”的极简回路，不计算电势。',
+      match: function (question, nodeIds, text) { return /腐蚀|防护|牺牲阳极|外加电流|镀层|电镀|锈蚀/.test(text); }
+    },
+    {
+      id: 'T13', name: '有机反应中的氧化还原中心', short: '有机氧化还原', color: '#a45277',
+      summary: '锁定真正改变成键环境的碳原子，用关键碳氧化程度判断，而不是只看整分子得氧失氢。',
+      cues: ['醇醛酸转化', '燃烧与氧化', '还原糖检验'],
+      backbone: [
+        { node: 'O2', action: '定位发生官能团或成键变化的关键碳原子' },
+        { node: 'R2', action: '按键的形式电子归属比较关键碳前后状态' },
+        { node: 'X11', action: '用受限的得氧失氢启发式辅助判断方向' },
+        { node: 'C3', action: '命名关键碳发生氧化还是还原' }
+      ],
+      branches: [
+        { label: '醇—醛—酸', route: ['R4','C1'], note: '追踪同一官能团碳的氧化程度逐步升高。' },
+        { label: '燃烧与完全氧化', route: ['Q3','Q5'], note: '用平均价和电子当量完成总体计量。' },
+        { label: '有机检验反应', route: ['X8','A2'], note: '把银镜或砖红沉淀连回有机物被氧化。' }
+      ],
+      boundary: '得氧失氢只是常见表面线索；分子重排、加成或消去必须回到具体反应中心判断。',
+      probe: '请圈出反应前后连接原子发生变化的那个碳，而不是比较整分子式。',
+      repair: '只比较一个关键碳周围的 C—H、C—O、C=O 键，不展开完整有机反应网络。',
+      match: function (question, nodeIds) { return nodeIds.indexOf('X11') >= 0; }
+    },
+    {
+      id: 'T14', name: '中间体、催化循环与竞争反应', short: '反应网络', color: '#4f7185',
+      summary: '把总反应拆成生成、消耗与再生步骤，区分中间体、催化剂和竞争通道，并判断净变化。',
+      cues: ['中间体浓度', '催化循环', '竞争/并行反应与选择性'],
+      backbone: [
+        { node: 'O2', action: '列出每一步真正消耗和生成的物种' },
+        { node: 'X10', action: '对中间体写净速率＝生成速率－消耗速率' },
+        { node: 'Q6', action: '用条件判断哪条通道被促进或抑制' },
+        { node: 'B2', action: '避免由净方程式反推唯一微观机理' }
+      ],
+      branches: [
+        { label: '串联中间体', route: ['X10','Q7'], note: '中间体浓度由生成、消耗两条速率共同决定。' },
+        { label: '催化剂再生', route: ['A3','B4'], note: '跨步骤追踪再生，不能按单一步骤给永久角色。' },
+        { label: '并行竞争通道', route: ['Q6','X7'], note: '选择性取决于条件与相对反应速率。' }
+      ],
+      boundary: '总反应式不能唯一揭示中间体、催化步骤和实际电子微观轨迹。',
+      probe: '这个物种在哪一步生成、在哪一步消耗？两者谁更快才能决定它的净变化？',
+      repair: '只把两步反应上下排列，逐项划掉相消物种，再写一次“生成－消耗”。',
+      match: function (question, nodeIds, text) { return nodeIds.indexOf('X10') >= 0 || /中间体|催化|竞争反应|并行反应|选择性/.test(text); }
     }
   ];
+
+  var archetypeFamilies = [
+    { id: 'F1', name: '价态与角色模型', summary: '回答“谁变、怎么变、扮演什么角色”。', archetypes: ['T9','T1','T7','T11'] },
+    { id: 'F2', name: '守恒、表达与定量', summary: '把变化转成方程、电子当量和测量结果。', archetypes: ['T2','T4','T8'] },
+    { id: 'F3', name: '装置、流程与材料', summary: '把基本模型迁移到电池、工业流程和腐蚀防护。', archetypes: ['T3','T6','T12'] },
+    { id: 'F4', name: '证据、可行性与复杂网络', summary: '处理实验论证、强弱比较、有机中心及多步反应。', archetypes: ['T5','T10','T13','T14'] }
+  ];
+
+  var archetypeSubtypeSpecs = {
+    T1: [
+      { id: 'T1a', name: '由变价判试剂角色', route: ['O3','R4','C1','A2'], surfaces: ['试剂作用填空','氧化剂/还原剂判断'], match: function (q,n,t) { return /氧化剂|还原剂|试剂.*作用/.test(t); } },
+      { id: 'T1b', name: '同一物质的角色切换', route: ['A3','B4'], surfaces: ['H2O2 双重性','同物质不同反应'], match: function (q,n,t) { return n.indexOf('A3') >= 0 || /既.*氧化.*又.*还原|双重/.test(t); } },
+      { id: 'T1c', name: '氧化产物与还原产物', route: ['C3','C4','C5'], surfaces: ['产物类型判断','成对变化追踪'], match: function (q,n,t) { return /氧化产物|还原产物|被氧化|被还原/.test(t); } }
+    ],
+    T2: [
+      { id: 'T2a', name: '陌生离子方程式配平', route: ['O2','R4','Q3','Q5','Q6'], surfaces: ['酸碱介质','缺项或系数填空'], match: function (q,n,t) { return /离子方程|配平|系数/.test(t); } },
+      { id: 'T2b', name: '电极半反应书写', route: ['X2','Q5','Q6'], surfaces: ['电池电极式','电解产物'], match: function (q,n,t) { return /电极反应|半反应|正极|负极|阴极|阳极/.test(t); } },
+      { id: 'T2c', name: '方程式正误与边界', route: ['Q5','B2'], surfaces: ['离子式正误','产物合理性'], match: function (q,n,t) { return /方程.*正确|方程.*错误|能否发生/.test(t); } }
+    ],
+    T3: [
+      { id: 'T3a', name: '电极与电子方向', route: ['R4','X2','X3'], surfaces: ['原电池','电解池','充放电'], match: function (q,n,t) { return /电子.*流|正极|负极|阴极|阳极|充电|放电/.test(t); } },
+      { id: 'T3b', name: '离子迁移与膜', route: ['X2','X4'], surfaces: ['盐桥','离子交换膜','双室电解槽'], match: function (q,n,t) { return /迁移|交换膜|盐桥|隔膜/.test(t); } },
+      { id: 'T3c', name: '电量、pH 与物料变化', route: ['X5','Q4','Q7'], surfaces: ['电量计算','pH变化','电解产物'], match: function (q,n,t) { return /电量|电流|pH|物质的量|质量|体积/.test(t); } }
+    ],
+    T4: [
+      { id: 'T4a', name: '转移电子数判断', route: ['Q1','Q2','Q3'], surfaces: ['电子数选择题','多中心计数'], match: function (q,n,t) { return /电子数|转移.*电子|电子.*mol/.test(t); } },
+      { id: 'T4b', name: '电子当量到物质的量', route: ['Q3','Q4','Q7'], surfaces: ['质量体积换算','产率含量'], match: function (q,n,t) { return /质量|体积|含量|产率|物质的量/.test(t); } },
+      { id: 'T4c', name: '电量法定量', route: ['X5','Q4','Q7'], surfaces: ['法拉第定律','电池容量'], match: function (q,n,t) { return /电量|电流|容量|库仑|96500/.test(t); } }
+    ],
+    T5: [
+      { id: 'T5a', name: '现象到物种识别', route: ['X8','O2'], surfaces: ['颜色变化','气体或沉淀'], match: function (q,n,t) { return /颜色|褪色|沉淀|气体|现象/.test(t); } },
+      { id: 'T5b', name: '对照与结论强度', route: ['O1','Q6','X7'], surfaces: ['控制变量','性质强弱比较'], match: function (q,n,t) { return /对照|控制变量|证明|说明|强弱/.test(t); } },
+      { id: 'T5c', name: '检验反应证据边界', route: ['X8','B2'], surfaces: ['特征反应','竞争解释'], match: function (q,n,t) { return /检验|鉴别|证明|现象/.test(t); } }
+    ],
+    T6: [
+      { id: 'T6a', name: '目标元素载体链', route: ['X9','O3','R4'], surfaces: ['浸取转化','焙烧氧化'], match: function (q,n,t) { return /流程|浸取|焙烧|转化/.test(t); } },
+      { id: 'T6b', name: '流程试剂作用', route: ['R4','C3','A3','Q6'], surfaces: ['氧化还原试剂','调介质或保护'], match: function (q,n,t) { return /试剂.*作用|作用是|目的/.test(t); } },
+      { id: 'T6c', name: '电解回收与沉积', route: ['X9','X2','Q7'], surfaces: ['电沉积','电解制备'], match: function (q,n,t) { return /电解|电沉积|回收/.test(t); } }
+    ],
+    T7: [
+      { id: 'T7a', name: '歧化反应', route: ['R4','X6','C5'], surfaces: ['中间价一分为二','同物质双角色'], match: function (q,n,t) { return /歧化/.test(t); } },
+      { id: 'T7b', name: '归中反应', route: ['R4','X6','Q3'], surfaces: ['高低价态汇合','同元素多反应物'], match: function (q,n,t) { return /归中|归中反应/.test(t); } },
+      { id: 'T7c', name: '平均价与多中心', route: ['R5','R3','X6'], surfaces: ['混合价化合物','平均氧化数'], match: function (q,n,t) { return /平均|混合价|多价态/.test(t); } }
+    ],
+    T8: [
+      { id: 'T8a', name: '氧化还原滴定计量', route: ['Q5','Q4','Q7'], surfaces: ['含量测定','返滴定'], match: function (q,n,t) { return /滴定|标准液|含量/.test(t); } },
+      { id: 'T8b', name: '终点现象与时序', route: ['Q6','X8'], surfaces: ['自身指示','指示剂变色'], match: function (q,n,t) { return /终点|指示剂|变色/.test(t); } },
+      { id: 'T8c', name: '操作误差传递', route: ['R1','Q7'], surfaces: ['滴定管读数','样品或标准液误差'], match: function (q,n,t) { return /误差|偏高|偏低|仰视|俯视|气泡/.test(t); } }
+    ],
+    T9: [
+      { id: 'T9a', name: '常规氧化数赋值', route: ['R1','R5','R4'], surfaces: ['分子与离子','未知价态求解'], match: function (q,n,t) { return /氧化数|化合价|价态/.test(t); } },
+      { id: 'T9b', name: '平均价态与组成', route: ['R5','R3','B1'], surfaces: ['混合价固体','平均化合价'], match: function (q,n,t) { return /平均|混合价|组成/.test(t); } },
+      { id: 'T9c', name: '结构边界修正', route: ['R2','R5','B1'], surfaces: ['过氧键','金属氢化物'], match: function (q,n,t) { return /过氧|超氧|氢化物/.test(t); } }
+    ],
+    T10: [
+      { id: 'T10a', name: '由反应事实比较强弱', route: ['X8','X7'], surfaces: ['置换或竞争反应','实验现象比较'], match: function (q,n,t) { return /强弱|氧化性|还原性|反应先后/.test(t); } },
+      { id: 'T10b', name: '条件改变与反应方向', route: ['Q6','X7'], surfaces: ['介质浓度','温度与产物'], match: function (q,n,t) { return /条件|介质|浓度|温度|酸性|碱性/.test(t); } },
+      { id: 'T10c', name: '可配平不等于可发生', route: ['Q5','B2','B3'], surfaces: ['方程式正误','反应可行性'], match: function (q,n,t) { return /能否发生|方程.*正|方程.*误|可行/.test(t); } }
+    ],
+    T11: [
+      { id: 'T11a', name: '过氧化氢作氧化剂', route: ['R5','C2','A1'], surfaces: ['还原为水','氧化低价物种'], match: function (q,n,t) { return /H2O2|过氧化氢/.test(t) && /氧化剂|被还原|还原为/.test(t); } },
+      { id: 'T11b', name: '过氧化氢作还原剂', route: ['R5','C1','A2'], surfaces: ['氧化为氧气','还原高价物种'], match: function (q,n,t) { return /H2O2|过氧化氢/.test(t) && /还原剂|氧气|O2/.test(t); } },
+      { id: 'T11c', name: '特殊含氧结构赋值', route: ['R1','R5','B1'], surfaces: ['过氧化物','超氧化物','过硫酸盐'], match: function (q,n,t) { return /过氧|超氧|过硫酸/.test(t); } }
+    ],
+    T12: [
+      { id: 'T12a', name: '原电池腐蚀快慢', route: ['C1','X2','X3'], surfaces: ['异种金属接触','吸氧或析氢腐蚀'], match: function (q,n,t) { return /腐蚀|锈蚀|加速/.test(t); } },
+      { id: 'T12b', name: '牺牲阳极保护', route: ['A2','X2','X7'], surfaces: ['船体管道保护','活泼金属连接'], match: function (q,n,t) { return /牺牲阳极|保护/.test(t); } },
+      { id: 'T12c', name: '电镀与外加电流', route: ['X2','X3','Q6'], surfaces: ['电镀','阴极保护'], match: function (q,n,t) { return /电镀|外加电流|阴极保护/.test(t); } }
+    ],
+    T13: [
+      { id: 'T13a', name: '官能团碳氧化程度', route: ['O2','R2','X11'], surfaces: ['醇醛酸','烯烃氧化'], match: function (q,n,t) { return /醇|醛|酸|有机|官能团/.test(t); } },
+      { id: 'T13b', name: '还原糖检验', route: ['X8','X11','A2'], surfaces: ['银镜反应','新制氢氧化铜'], match: function (q,n,t) { return /银镜|还原糖|氢氧化铜/.test(t); } },
+      { id: 'T13c', name: '有机物燃烧电子当量', route: ['R4','Q3','Q7'], surfaces: ['燃烧耗氧','产物定量'], match: function (q,n,t) { return /燃烧|耗氧|二氧化碳/.test(t); } }
+    ],
+    T14: [
+      { id: 'T14a', name: '串联中间体净变化', route: ['O2','X10','Q7'], surfaces: ['浓度变化','速率关系'], match: function (q,n,t) { return /中间体|净速率|生成速率|消耗速率/.test(t); } },
+      { id: 'T14b', name: '催化剂跨步骤再生', route: ['O2','A3','B4'], surfaces: ['催化循环','催化剂价态循环'], match: function (q,n,t) { return /催化/.test(t); } },
+      { id: 'T14c', name: '竞争反应与选择性', route: ['Q6','X7','B2'], surfaces: ['并行反应','副反应','选择性控制'], match: function (q,n,t) { return /竞争|并行|副反应|选择性/.test(t); } }
+    ]
+  };
 
   var nodeById = {};
   var edgeById = {};
@@ -1051,6 +1251,39 @@
     return pathArchetypes.filter(function (archetype) { return archetype.id === id; })[0] || pathArchetypes[0];
   }
 
+  function subtypeSpecsForArchetype(archetype) {
+    return archetypeSubtypeSpecs[archetype.id] || [];
+  }
+
+  function subtypeById(id) {
+    var found = null;
+    Object.keys(archetypeSubtypeSpecs).some(function (archetypeId) {
+      found = archetypeSubtypeSpecs[archetypeId].filter(function (subtype) { return subtype.id === id; })[0] || null;
+      return !!found;
+    });
+    return found;
+  }
+
+  function questionsForSubtype(archetype, subtype) {
+    return questionsForArchetype(archetype).filter(function (question) {
+      var nodeIds = question.path.map(function (step) { return step.node; });
+      return subtype.match(question, nodeIds, questionSearchText(question));
+    });
+  }
+
+  function subtypesForQuestion(archetype, question) {
+    var nodeIds = question.path.map(function (step) { return step.node; });
+    var text = questionSearchText(question);
+    return subtypeSpecsForArchetype(archetype).filter(function (subtype) { return subtype.match(question, nodeIds, text); });
+  }
+
+  function evidenceTier(archetype) {
+    var count = questionsForArchetype(archetype).length;
+    if (count >= 3) return { label: '已有多题支持', className: 'strong' };
+    if (count > 0) return { label: '初步样本', className: 'emerging' };
+    return { label: '覆盖前沿', className: 'frontier' };
+  }
+
   var initialVariant = new URL(window.location.href).searchParams.get('variant') || 'A';
   if (!variantMeta[initialVariant]) initialVariant = 'A';
 
@@ -1072,6 +1305,7 @@
     showQuestionLibrary: false,
     showArchetypeLibrary: false,
     activeArchetypeId: null,
+    activeSubtypeId: null,
     highlightedArchetypeId: null,
     openQuestionId: null,
     questionTab: 'original',
@@ -1203,7 +1437,8 @@
     if (state.question === 'all') {
       if (state.highlightedArchetypeId && state.activePathNodeIds) {
         var activeArchetype = archetypeById(state.highlightedArchetypeId);
-        return '<section class="question-context-bar archetype-context"><div class="question-context-meta"><span class="exam-tag" style="--archetype-color:' + activeArchetype.color + '">题型主干</span><div><span class="unit-path-context-label">' + esc(activeArchetype.id + ' · ' + activeArchetype.short) + '</span><strong>' + esc(activeArchetype.name) + '</strong><span>当前只高亮该题型的 ' + activeArchetype.backbone.length + ' 个主干节点；分支和具体题目在题型库中展开。</span></div></div><button class="primary-button" data-action="open-archetype" data-id="' + activeArchetype.id + '">重新打开题型总结</button></section>';
+        var activeSubtype = state.activeSubtypeId ? subtypeById(state.activeSubtypeId) : null;
+        return '<section class="question-context-bar archetype-context"><div class="question-context-meta"><span class="exam-tag" style="--archetype-color:' + activeArchetype.color + '">' + (activeSubtype ? '二级子型' : '一级主干') + '</span><div><span class="unit-path-context-label">' + esc(activeSubtype ? activeSubtype.id + ' · ' + activeSubtype.name : activeArchetype.id + ' · ' + activeArchetype.short) + '</span><strong>' + esc(activeArchetype.name) + '</strong><span>当前高亮 ' + state.activePathNodeIds.length + ' 个路径节点；具体真题和题面情境在分层题型库中展开。</span></div></div><button class="primary-button" data-action="' + (activeSubtype ? 'open-subtype' : 'open-archetype') + '" data-archetype="' + activeArchetype.id + '" data-id="' + (activeSubtype ? activeSubtype.id : activeArchetype.id) + '">重新打开分层题型</button></section>';
       }
       return '<section class="question-context-bar overview"><div><strong>已接入 ' + Object.keys(questionBank).length + ' 个已核验 ItemUnit</strong><span>其余本地整卷仍是候选源，尚未逐题拆解和教研复核。</span></div><button class="primary-button" data-action="open-library">浏览真题、路径与修补</button></section>';
     }
@@ -1536,29 +1771,50 @@
   }
 
   function renderArchetypeOverview() {
-    var cards = pathArchetypes.map(function (archetype) {
-      var matched = questionsForArchetype(archetype);
-      return [
-        '<article class="archetype-card" style="--archetype-color:' + archetype.color + '">',
-          '<header><span>' + archetype.id + '</span><strong>' + matched.length + ' 道已核验题支持</strong></header>',
-          '<h3>' + esc(archetype.name) + '</h3>',
-          '<p>' + esc(archetype.summary) + '</p>',
-          '<div class="archetype-cues">' + archetype.cues.map(function (cue) { return '<span>' + esc(cue) + '</span>'; }).join('') + '</div>',
-          '<div class="archetype-card-route">' + archetypeRouteHtml(archetypeNodeIds(archetype)) + '</div>',
-          '<footer><span>主干 ' + archetype.backbone.length + ' 节点 · 常见分支 ' + archetype.branches.length + '</span><button class="primary-button" data-action="open-archetype" data-id="' + archetype.id + '">展开题型路径</button></footer>',
-        '</article>'
-      ].join('');
+    var covered = {};
+    var subtypeCount = 0;
+    pathArchetypes.forEach(function (archetype) {
+      questionsForArchetype(archetype).forEach(function (question) { covered[question.id] = true; });
+      subtypeCount += subtypeSpecsForArchetype(archetype).length;
+    });
+    var familySections = archetypeFamilies.map(function (family) {
+      var cards = family.archetypes.map(function (archetypeId) {
+        var archetype = archetypeById(archetypeId);
+        var matched = questionsForArchetype(archetype);
+        var tier = evidenceTier(archetype);
+        var subtypeChips = subtypeSpecsForArchetype(archetype).map(function (subtype) {
+          return '<button data-action="open-subtype" data-archetype="' + archetype.id + '" data-id="' + subtype.id + '"><span>' + subtype.id + '</span>' + esc(subtype.name) + '<small>' + questionsForSubtype(archetype, subtype).length + '题</small></button>';
+        }).join('');
+        return [
+          '<article class="archetype-card" style="--archetype-color:' + archetype.color + '">',
+            '<header><span>' + archetype.id + '</span><strong class="evidence-tier ' + tier.className + '">' + tier.label + ' · ' + matched.length + '题</strong></header>',
+            '<h3>' + esc(archetype.name) + '</h3>',
+            '<p>' + esc(archetype.summary) + '</p>',
+            '<div class="archetype-level-label"><span>二级子型</span><strong>' + subtypeSpecsForArchetype(archetype).length + ' 条任务分叉</strong></div>',
+            '<div class="archetype-subtype-chips">' + subtypeChips + '</div>',
+            '<div class="archetype-card-route">' + archetypeRouteHtml(archetypeNodeIds(archetype)) + '</div>',
+            '<footer><span>一级主干 ' + archetype.backbone.length + ' 节点</span><button class="primary-button" data-action="open-archetype" data-id="' + archetype.id + '">展开三级证据</button></footer>',
+          '</article>'
+        ].join('');
+      }).join('');
+      return '<section class="archetype-family"><header><span>' + family.id + ' · 一级路径组</span><h3>' + esc(family.name) + '</h3><p>' + esc(family.summary) + '</p></header><div class="archetype-grid">' + cards + '</div></section>';
     }).join('');
     return [
       '<div class="archetype-overview">',
-        '<section class="archetype-hero"><div><span class="prototype-label">PATH ARCHETYPE LIBRARY / PROTOTYPE</span><h2>题型不是题目名称，而是可重复调用的连接模板</h2><p>每道题可以同时属于多个题型。这里统计的是“哪条路径被调用”，不是按试卷章节把题目只塞进一个筐子。</p></div><div class="archetype-hero-stats"><strong>' + pathArchetypes.length + '</strong><span>类题型路径</span><strong>' + Object.keys(questionBank).length + '</strong><span>个已核验 ItemUnit 作为证据</span></div></section>',
-        '<div class="archetype-grid">' + cards + '</div>',
+        '<section class="archetype-hero"><div><span class="prototype-label">HIERARCHICAL PATH LIBRARY / PROTOTYPE</span><h2>一级主干 → 二级子型 → 真实题目</h2><p>一级主干表示稳定的认知连接，二级子型表示任务分叉，年份、省份、材料和装置只是题面情境。新题先尝试落入旧路径，无法解释时才新增子型或主干。</p></div><div class="archetype-hero-stats"><strong>' + archetypeFamilies.length + '</strong><span>个路径组</span><strong>' + pathArchetypes.length + '</strong><span>条一级主干</span><strong>' + subtypeCount + '</strong><span>个二级子型</span><strong>' + Object.keys(covered).length + '/' + Object.keys(questionBank).length + '</strong><span>题至少命中一条主干</span></div></section>',
+        '<section class="taxonomy-rule"><strong>不要混为一层</strong><div><span><b>一级主干</b>：稳定解题连接</span><span><b>二级子型</b>：同一主干的任务分叉</span><span><b>题面情境</b>：电池、流程、环保材料、某省某年</span></div></section>',
+        familySections,
+        '<section class="coverage-frontier"><div><span>COVERAGE FRONTIER</span><h3>“更完整”不等于宣称“全部题型”</h3></div><p>当前分类由本地 65 个已核验 ItemUnit 反推。出现 0—2 道支持的路径会保留为“覆盖前沿/初步样本”；后续加入更多年份与省份后，只有当旧主干无法解释新题时才新增路径。</p></section>',
       '</div>'
     ].join('');
   }
 
   function renderArchetypeDetail(archetype) {
-    var matched = questionsForArchetype(archetype);
+    var allMatched = questionsForArchetype(archetype);
+    var activeSubtype = state.activeSubtypeId ? subtypeById(state.activeSubtypeId) : null;
+    if (activeSubtype && subtypeSpecsForArchetype(archetype).indexOf(activeSubtype) < 0) activeSubtype = null;
+    var matched = activeSubtype ? questionsForSubtype(archetype, activeSubtype) : allMatched;
+    var tier = evidenceTier(archetype);
     var steps = archetype.backbone.map(function (step, index) {
       var node = nodeById[step.node];
       return '<article class="archetype-step" style="--node-color:' + layers[node.layer].color + '"><button data-action="inspect-archetype-node" data-id="' + node.id + '"><span>' + node.id + '</span><strong>' + esc(node.name) + '</strong></button><div><small>STEP ' + (index + 1) + '</small><p>' + esc(step.action) + '</p></div></article>';
@@ -1566,18 +1822,24 @@
     var branches = archetype.branches.map(function (branch) {
       return '<article class="archetype-branch"><header><span>常见分支</span><strong>' + esc(branch.label) + '</strong></header><div>' + archetypeRouteHtml(branch.route) + '</div><p>' + esc(branch.note) + '</p></article>';
     }).join('');
-    var questionsHtml = matched.map(function (question) {
-      return '<button class="archetype-question" data-action="open-question" data-id="' + question.id + '"><span>' + esc(questionTag(question)) + '</span><strong>' + esc(question.title) + '</strong><small>' + esc(question.short || question.format) + ' · ' + question.path.length + ' 步整题路径</small></button>';
+    var subtypeCards = subtypeSpecsForArchetype(archetype).map(function (subtype) {
+      var subtypeQuestions = questionsForSubtype(archetype, subtype);
+      return '<article class="archetype-subtype-card ' + (activeSubtype && activeSubtype.id === subtype.id ? 'active' : '') + '"><header><span>' + subtype.id + '</span><strong>' + subtypeQuestions.length + ' 道真题证据</strong></header><h4>' + esc(subtype.name) + '</h4><div class="archetype-subtype-surfaces">' + subtype.surfaces.map(function (surface) { return '<span>' + esc(surface) + '</span>'; }).join('') + '</div><div class="archetype-subtype-route">' + archetypeRouteHtml(subtype.route) + '</div><footer><button data-action="open-subtype" data-archetype="' + archetype.id + '" data-id="' + subtype.id + '">只看该子型真题</button><button data-action="highlight-subtype" data-archetype="' + archetype.id + '" data-id="' + subtype.id + '">高亮子路径</button></footer></article>';
     }).join('');
+    var questionsHtml = matched.map(function (question) {
+      var subtypeNames = subtypesForQuestion(archetype, question).map(function (subtype) { return subtype.id; }).join(' / ');
+      return '<button class="archetype-question" data-action="open-question" data-id="' + question.id + '"><span>' + esc(questionTag(question)) + '</span><strong>' + esc(question.title) + '</strong><small>' + esc(question.short || question.format) + ' · ' + question.path.length + ' 步整题路径' + (subtypeNames ? ' · ' + subtypeNames : '') + '</small></button>';
+    }).join('') || '<div class="archetype-question-empty"><strong>当前本地样本还没有命中这一子型</strong><p>保留它作为覆盖前沿，等待后续真题核验；不会用算法伪造题目证据。</p></div>';
     return [
       '<div class="archetype-detail" style="--archetype-color:' + archetype.color + '">',
         '<button class="archetype-back" data-action="archetype-overview">← 返回全部题型</button>',
-        '<header class="archetype-detail-head"><div><span>' + archetype.id + ' · ' + esc(archetype.short) + '</span><h2>' + esc(archetype.name) + '</h2><p>' + esc(archetype.summary) + '</p></div><div><strong>' + matched.length + '</strong><span>道当前真题调用</span></div></header>',
+        '<header class="archetype-detail-head"><div><span>' + archetype.id + ' · 一级主干 · ' + esc(archetype.short) + '</span><h2>' + esc(archetype.name) + '</h2><p>' + esc(archetype.summary) + '</p><em class="evidence-tier ' + tier.className + '">' + tier.label + '</em></div><div><strong>' + allMatched.length + '</strong><span>道当前真题调用</span></div></header>',
         '<section class="archetype-signal-panel"><strong>看见这些任务信号</strong><div>' + archetype.cues.map(function (cue) { return '<span>' + esc(cue) + '</span>'; }).join('') + '</div></section>',
-        '<section class="archetype-backbone"><header><div><span>STABLE BACKBONE</span><h3>题型的稳定主干</h3></div><button class="primary-button" data-action="highlight-archetype" data-id="' + archetype.id + '">在知识图中高亮主干</button></header><div class="archetype-route-large">' + archetypeRouteHtml(archetypeNodeIds(archetype)) + '</div><div class="archetype-step-list">' + steps + '</div></section>',
-        '<section><div class="archetype-section-title"><span>VARIABLE BRANCHES</span><h3>题面改变后常见的分支</h3></div><div class="archetype-branch-grid">' + branches + '</div></section>',
+        '<section class="archetype-backbone"><header><div><span>LEVEL 1 · STABLE BACKBONE</span><h3>一级：不随题面轻易变化的主干</h3></div><button class="primary-button" data-action="highlight-archetype" data-id="' + archetype.id + '">在知识图中高亮主干</button></header><div class="archetype-route-large">' + archetypeRouteHtml(archetypeNodeIds(archetype)) + '</div><div class="archetype-step-list">' + steps + '</div></section>',
+        '<section><div class="archetype-section-title"><span>LEVEL 2 · TASK SUBTYPES</span><h3>二级：同一主干下的任务子型</h3><p>点击子型后，三级真题只保留真正命中该分叉的题。</p></div><div class="archetype-subtype-grid">' + subtypeCards + '</div></section>',
+        '<section><div class="archetype-section-title"><span>VARIABLE BRANCHES</span><h3>作答时可能转入的局部分支</h3></div><div class="archetype-branch-grid">' + branches + '</div></section>',
         '<section class="archetype-diagnosis-grid"><article><span>适用边界</span><p>' + esc(archetype.boundary) + '</p></article><article><span>最小诊断问题</span><p>' + esc(archetype.probe) + '</p></article><article><span>最小修补动作</span><p>' + esc(archetype.repair) + '</p></article></section>',
-        '<section class="archetype-question-section"><div class="archetype-section-title"><span>EVIDENCE FROM QUESTIONS</span><h3>当前 ' + matched.length + ' 道真题如何调用这类路径</h3><p>点击题目可继续查看题内小路径、整题路径和断连修补。</p></div><div class="archetype-question-grid">' + questionsHtml + '</div></section>',
+        '<section class="archetype-question-section"><div class="archetype-section-title"><span>LEVEL 3 · EVIDENCE FROM QUESTIONS</span><h3>' + (activeSubtype ? esc(activeSubtype.id + ' · ' + activeSubtype.name) : '全部二级子型') + '：' + matched.length + ' 道真题</h3><p>年份、省份、材料和装置在这一层出现。点击题目可继续查看题内小路径、整题路径和断连修补。</p>' + (activeSubtype ? '<button class="clear-subtype" data-action="clear-subtype">清除子型筛选</button>' : '') + '</div><div class="archetype-question-grid">' + questionsHtml + '</div></section>',
       '</div>'
     ].join('');
   }
@@ -1686,8 +1948,12 @@
   function renderQuestionPath(question) {
     var matchedArchetypes = archetypesForQuestion(question);
     var archetypeLinks = matchedArchetypes.length
-      ? '<section class="question-archetype-links"><header><span>从单题回到题型</span><strong>这道题调用 ' + matchedArchetypes.length + ' 类共通路径</strong></header><div>' + matchedArchetypes.map(function (archetype) { return '<button style="--archetype-color:' + archetype.color + '" data-action="open-archetype" data-id="' + archetype.id + '"><span>' + archetype.id + '</span><strong>' + esc(archetype.short) + '</strong></button>'; }).join('') + '</div></section>'
-      : '<div class="question-archetype-empty">当前 8 类题型主干还不能稳定概括这道题，先保留单题路径，不强行归类。</div>';
+      ? '<section class="question-archetype-links"><header><span>从单题回到分层题型</span><strong>这道题调用 ' + matchedArchetypes.length + ' 条一级主干</strong></header><div>' + matchedArchetypes.map(function (archetype) {
+          var subtypes = subtypesForQuestion(archetype, question);
+          var primarySubtype = subtypes[0];
+          return '<button style="--archetype-color:' + archetype.color + '" data-action="' + (primarySubtype ? 'open-subtype' : 'open-archetype') + '" data-archetype="' + archetype.id + '" data-id="' + (primarySubtype ? primarySubtype.id : archetype.id) + '"><span>' + archetype.id + '</span><strong>' + esc(archetype.short) + '</strong><small>' + esc(subtypes.length ? subtypes.map(function (subtype) { return subtype.id + ' ' + subtype.name; }).join(' / ') : '暂未命中二级子型') + '</small></button>';
+        }).join('') + '</div></section>'
+      : '<div class="question-archetype-empty">当前 ' + pathArchetypes.length + ' 条一级主干还不能稳定概括这道题，先保留单题路径，不强行归类。</div>';
     return [
       '<section class="question-tab-panel">',
         archetypeLinks,
@@ -1770,7 +2036,7 @@
       open_question: state.openQuestionId,
       question_tab: state.questionTab,
       active_question_unit: state.activeUnitKey,
-      archetype_library: { open: state.showArchetypeLibrary, selected: state.activeArchetypeId, highlighted: state.highlightedArchetypeId },
+      archetype_library: { open: state.showArchetypeLibrary, selected: state.activeArchetypeId, subtype: state.activeSubtypeId, highlighted: state.highlightedArchetypeId },
       active_subpath: state.activePathNodeIds ? { label: state.activePathLabel, nodes: state.activePathNodeIds, edges: state.activePathEdgeIds } : null,
       active_candidate_gap: state.activeGapId,
       graph_view: { zoom: state.graphZoom, pan_x: state.graphPanX, pan_y: state.graphPanY },
@@ -1890,13 +2156,16 @@
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
           state.activeArchetypeId = null;
+          state.activeSubtypeId = null;
           state.highlightedArchetypeId = null;
           render();
         }
         else if (action === 'evidence') { state.evidence[el.getAttribute('data-node')] = el.getAttribute('data-id'); render(); }
-        else if (action === 'open-archetypes') { state.showArchetypeLibrary = true; state.activeArchetypeId = null; render(); }
-        else if (action === 'open-archetype') { state.showArchetypeLibrary = true; state.activeArchetypeId = el.getAttribute('data-id'); render(); }
-        else if (action === 'archetype-overview') { state.activeArchetypeId = null; render(); }
+        else if (action === 'open-archetypes') { state.showArchetypeLibrary = true; state.activeArchetypeId = null; state.activeSubtypeId = null; render(); }
+        else if (action === 'open-archetype') { state.showArchetypeLibrary = true; state.activeArchetypeId = el.getAttribute('data-id'); state.activeSubtypeId = null; render(); }
+        else if (action === 'open-subtype') { state.showArchetypeLibrary = true; state.activeArchetypeId = el.getAttribute('data-archetype'); state.activeSubtypeId = el.getAttribute('data-id'); render(); }
+        else if (action === 'clear-subtype') { state.activeSubtypeId = null; render(); }
+        else if (action === 'archetype-overview') { state.activeArchetypeId = null; state.activeSubtypeId = null; render(); }
         else if (action === 'close-archetypes') {
           if (event.target === el || el.tagName === 'BUTTON') { state.showArchetypeLibrary = false; render(); }
         }
@@ -1909,6 +2178,21 @@
           state.activePathNodeIds = archetypeNodes;
           state.activePathEdgeIds = edgeIdsForPath(archetypeNodes.map(function (id) { return { node: id }; }));
           state.activePathLabel = '题型主干 · ' + archetype.name;
+          state.showArchetypeLibrary = false;
+          state.openQuestionId = null;
+          render();
+        }
+        else if (action === 'highlight-subtype') {
+          var subtypeArchetype = archetypeById(el.getAttribute('data-archetype'));
+          var subtype = subtypeById(el.getAttribute('data-id'));
+          var subtypeNodes = subtype.route.slice();
+          state.question = 'all';
+          state.activeArchetypeId = subtypeArchetype.id;
+          state.activeSubtypeId = subtype.id;
+          state.highlightedArchetypeId = subtypeArchetype.id;
+          state.activePathNodeIds = subtypeNodes;
+          state.activePathEdgeIds = edgeIdsForPath(subtypeNodes.map(function (id) { return { node: id }; }));
+          state.activePathLabel = '二级子型 · ' + subtype.name;
           state.showArchetypeLibrary = false;
           state.openQuestionId = null;
           render();
@@ -1932,6 +2216,7 @@
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
           state.activeArchetypeId = null;
+          state.activeSubtypeId = null;
           state.highlightedArchetypeId = null;
           state.activeGapId = null;
           state.showQuestionLibrary = false;
@@ -1956,6 +2241,7 @@
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
           state.activeArchetypeId = null;
+          state.activeSubtypeId = null;
           state.highlightedArchetypeId = null;
           render();
         }
@@ -1967,6 +2253,7 @@
           state.activePathEdgeIds = edgeIdsForPath(unit.path);
           state.activePathLabel = unit.label + ' · ' + unit.keyword;
           state.activeArchetypeId = null;
+          state.activeSubtypeId = null;
           state.highlightedArchetypeId = null;
           state.openQuestionId = null;
           state.showQuestionLibrary = false;
@@ -1978,6 +2265,7 @@
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
           state.activeArchetypeId = null;
+          state.activeSubtypeId = null;
           state.highlightedArchetypeId = null;
           state.openQuestionId = null;
           state.showQuestionLibrary = false;
@@ -1994,6 +2282,7 @@
           state.activePathEdgeIds = null;
           state.activePathLabel = '';
           state.activeArchetypeId = null;
+          state.activeSubtypeId = null;
           state.highlightedArchetypeId = null;
           state.questionTab = 'repair';
           render();

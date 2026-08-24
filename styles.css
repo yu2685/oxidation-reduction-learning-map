@@ -422,6 +422,63 @@ button { color: inherit; }
 .question-archetype-links button strong { font-size: 13px; }
 .question-archetype-empty { padding: 13px; border: 1px dashed #c9cec9; border-radius: 12px; color: var(--muted); background: #f5f5f1; }
 
+.taxonomy-rule {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  margin-top: 14px; padding: 15px 18px; border: 1px solid #d8dfda; border-radius: 15px; background: white;
+}
+.taxonomy-rule > strong { flex: 0 0 auto; color: var(--deep); }
+.taxonomy-rule > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.taxonomy-rule span { padding: 7px 10px; border-radius: 9px; color: #53615b; background: #f1f4f1; font-size: 13px; }
+.taxonomy-rule b { color: #183d33; }
+.archetype-family { margin-top: 23px; }
+.archetype-family > header { display: grid; gap: 4px; margin: 0 2px 11px; }
+.archetype-family > header > span { color: #a55d35; font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.archetype-family > header h3 { margin: 0; font-size: 24px; }
+.archetype-family > header p { margin: 0; color: var(--muted); }
+.evidence-tier { display: inline-flex; width: max-content; padding: 4px 7px; border-radius: 999px; font-size: 10px; font-style: normal; font-weight: 900; }
+.evidence-tier.strong { color: #22624f; background: #dff1e9; }
+.evidence-tier.emerging { color: #835c12; background: #fff0c9; }
+.evidence-tier.frontier { color: #7c4c41; background: #f7dfd8; }
+.archetype-level-label { display: flex; justify-content: space-between; gap: 10px; margin-top: 13px; color: var(--muted); font-size: 11px; }
+.archetype-level-label span { color: var(--archetype-color); font-weight: 900; }
+.archetype-subtype-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.archetype-subtype-chips button {
+  display: flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid #d7ddd8; border-radius: 9px;
+  color: #33433d; background: #f8faf8; cursor: pointer; font-size: 11px;
+}
+.archetype-subtype-chips button:hover { border-color: var(--archetype-color); background: white; }
+.archetype-subtype-chips button span { color: var(--archetype-color); font-weight: 900; }
+.archetype-subtype-chips button small { color: #77827d; }
+.coverage-frontier {
+  display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 20px; align-items: center;
+  margin-top: 24px; padding: 20px; border: 1px dashed #b9c4bd; border-radius: 16px; background: #eef2ef;
+}
+.coverage-frontier span { color: #6b776f; font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.coverage-frontier h3 { margin: 5px 0 0; font-size: 19px; }
+.coverage-frontier p { margin: 0; color: var(--muted); line-height: 1.65; }
+.archetype-detail-head .evidence-tier { margin-top: 12px; }
+.archetype-subtype-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+.archetype-subtype-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.archetype-subtype-card.active { border: 2px solid var(--archetype-color); box-shadow: 0 8px 24px color-mix(in srgb, var(--archetype-color) 16%, transparent); }
+.archetype-subtype-card > header { display: flex; justify-content: space-between; gap: 9px; color: var(--muted); font-size: 10px; }
+.archetype-subtype-card > header span { color: var(--archetype-color); font-weight: 900; }
+.archetype-subtype-card h4 { margin: 8px 0; font-size: 17px; }
+.archetype-subtype-surfaces { display: flex; flex-wrap: wrap; gap: 5px; }
+.archetype-subtype-surfaces span { padding: 5px 7px; border-radius: 999px; color: #5e513f; background: #fff3e5; font-size: 10px; }
+.archetype-subtype-route { display: flex; align-items: center; gap: 3px; overflow-x: auto; margin-top: 10px; padding: 8px; border-radius: 10px; background: #f1f4f2; }
+.archetype-subtype-route .archetype-route-node { padding: 6px 7px; }
+.archetype-subtype-route .archetype-route-node strong { font-size: 10px; }
+.archetype-subtype-card > footer { display: flex; gap: 6px; margin-top: 10px; }
+.archetype-subtype-card > footer button, .clear-subtype {
+  flex: 1; padding: 8px; border: 1px solid var(--archetype-color); border-radius: 8px; color: var(--archetype-color); background: white; cursor: pointer; font-weight: 800;
+}
+.archetype-subtype-card > footer button:last-child { color: white; background: var(--archetype-color); }
+.archetype-question-empty { grid-column: 1 / -1; padding: 18px; border: 1px dashed #c6cec9; border-radius: 12px; color: var(--muted); background: #f7f7f3; }
+.archetype-question-empty p { margin: 6px 0 0; }
+.clear-subtype { width: max-content; margin-top: 10px; padding: 7px 10px; color: var(--archetype-color); }
+.question-archetype-links button { flex-wrap: wrap; }
+.question-archetype-links button small { width: 100%; color: var(--muted); font-size: 10px; text-align: left; }
+
 /* Question library and question-path drawer */
 .question-library-overlay { display: grid; place-items: center; padding: 24px; }
 .question-library-modal {
@@ -670,6 +727,7 @@ button { color: inherit; }
   .matrix-layout { grid-template-columns: 1fr; }
   .matrix-detail { position: static; }
   .archetype-step-list { grid-template-columns: 1fr; }
+  .archetype-subtype-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 820px) {
@@ -690,10 +748,13 @@ button { color: inherit; }
   .archetype-library-body { padding: 12px; }
   .archetype-hero, .archetype-detail-head { grid-template-columns: 1fr; padding: 18px; }
   .archetype-hero-stats { grid-template-columns: auto 1fr; }
-  .archetype-grid, .archetype-branch-grid, .archetype-diagnosis-grid, .archetype-question-grid { grid-template-columns: 1fr; }
+  .archetype-grid, .archetype-branch-grid, .archetype-diagnosis-grid, .archetype-question-grid, .archetype-subtype-grid { grid-template-columns: 1fr; }
   .archetype-card > footer, .archetype-backbone > header, .archetype-signal-panel { align-items: stretch; flex-direction: column; }
   .archetype-step { grid-template-columns: 106px 1fr; }
   .archetype-detail-head > div:last-child { justify-content: start; text-align: left; }
+  .taxonomy-rule { align-items: stretch; flex-direction: column; }
+  .taxonomy-rule > div { display: grid; }
+  .coverage-frontier { grid-template-columns: 1fr; }
   .question-card-footer { align-items: flex-start; flex-direction: column; }
   .question-drawer-head { padding: 16px; }
   .question-drawer-head h2 { font-size: 20px; }
