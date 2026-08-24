@@ -160,6 +160,7 @@
           '<a class="challenge-brand" href="./challenge.html"><span>关</span><div><strong>氧化还原节点闯关</strong><small>广义陈述 · 主动回忆 · 最小纠错</small></div></a>',
           '<nav>',
             '<a href="./index.html">返回知识地图</a>',
+            '<a href="./path-challenge-prototype.html">路径闯关</a>',
             '<button class="nav-button ' + (active === 'archive' ? 'active' : '') + '" data-action="show-archive">学习归档</button>',
             '<span class="nav-stat">暂时掌握 <strong>' + stats.provisional + '</strong>/39</span>',
           '</nav>',

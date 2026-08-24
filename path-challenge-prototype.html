@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123d35">
+  <title>氧化还原路径闯关｜造桥原型</title>
+  <style>
+    :root { --ink:#17362f; --muted:#65736e; --paper:#f4f2eb; --panel:#fff; --line:#d8ded9; --green:#174b3f; --orange:#df7440; --red:#b54f44; --shadow:0 18px 55px rgba(25,50,42,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:radial-gradient(circle at 80% 0,#e1eee8,transparent 36%),var(--paper); font:16px/1.55 "Microsoft YaHei","PingFang SC",sans-serif; }
+    button,a { font:inherit; }
+    button { cursor:pointer; }
+    .shell { min-height:100vh; }
+    .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px clamp(16px,4vw,48px); color:white; background:#123d35; box-shadow:0 8px 24px rgba(15,48,40,.2); }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; border-radius:13px; color:#143d34; background:#ffb47f; font-size:25px; font-weight:900; }
+    .brand strong { display:block; font-size:19px; }
+    .brand span { color:#cfe0da; font-size:12px; }
+    .nav { display:flex; gap:8px; }
+    .nav a { padding:9px 12px; border:1px solid #52756b; border-radius:10px; color:white; text-decoration:none; }
+    .intro { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:24px; max-width:1280px; margin:28px auto 0; padding:0 24px; }
+    .intro-main,.state-card { border:1px solid var(--line); border-radius:22px; background:var(--panel); box-shadow:var(--shadow); }
+    .intro-main { padding:28px; }
+    .label { color:var(--orange); font-size:11px; font-weight:900; letter-spacing:.09em; }
+    h1 { margin:8px 0 12px; font-size:clamp(30px,4vw,48px); line-height:1.15; }
+    .intro p { margin:0; color:var(--muted); }
+    .question-box { margin-top:18px; padding:14px 16px; border-left:5px solid var(--orange); border-radius:10px; background:#fff4e9; }
+    .question-box strong { display:block; margin-bottom:4px; }
+    .state-card { padding:20px; }
+    .state-card h2 { margin:4px 0 14px; font-size:20px; }
+    .state-grid { display:grid; grid-template-columns:1fr auto; gap:8px 14px; }
+    .state-grid span { color:var(--muted); }
+    .state-grid strong { text-align:right; }
+    .candidate { margin-top:14px; padding:10px; border-radius:10px; color:#763e35; background:#f8e7e2; font-size:13px; }
+    .main { display:grid; grid-template-columns:280px minmax(0,1fr); gap:18px; max-width:1280px; margin:18px auto; padding:0 24px 100px; }
+    .sidebar,.stage,.walkthroughs { border:1px solid var(--line); border-radius:20px; background:var(--panel); box-shadow:0 10px 35px rgba(25,50,42,.08); }
+    .sidebar { align-self:start; position:sticky; top:86px; max-height:calc(100vh - 108px); overflow:auto; padding:16px; }
+    .sidebar h2 { margin:0 0 4px; font-size:19px; }
+    .sidebar > p { margin:0 0 13px; color:var(--muted); font-size:13px; }
+    .path-list { display:grid; gap:7px; }
+    .path-choice { display:grid; grid-template-columns:36px 1fr; gap:9px; padding:10px; text-align:left; border:1px solid var(--line); border-radius:11px; color:var(--ink); background:#fafbf9; }
+    .path-choice.active { border:2px solid var(--path-color); background:color-mix(in srgb,var(--path-color) 8%,white); }
+    .path-choice span { display:grid; place-items:center; width:34px; height:34px; border-radius:10px; color:white; background:var(--path-color); font-size:11px; font-weight:900; }
+    .path-choice strong { align-self:center; font-size:13px; line-height:1.35; }
+    .content { display:grid; gap:16px; min-width:0; }
+    .stage { overflow:hidden; }
+    .stage-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 22px; color:white; background:linear-gradient(135deg,var(--path-color,#1d5849),#123d35); }
+    .stage-head h2 { margin:4px 0 0; font-size:25px; }
+    .stage-head p { margin:6px 0 0; color:#d7e6e0; }
+    .gate-count { flex:0 0 auto; text-align:right; }
+    .gate-count strong { display:block; color:#ffb47f; font-size:32px; }
+    .gate-rail { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:14px 18px; background:#e8eee9; }
+    .gate { position:relative; padding:8px 5px; border:0; border-radius:9px; color:#65736e; background:#f8faf8; font-size:11px; }
+    .gate.active { color:white; background:var(--path-color,#1d5849); }
+    .gate.done { color:#205e4c; background:#cfe8dd; }
+    .stage-body { padding:24px; }
+    .stage-prompt small { color:var(--orange); font-weight:900; }
+    .stage-prompt h3 { margin:5px 0 7px; font-size:23px; }
+    .stage-prompt p { margin:0; color:var(--muted); }
+    .bridge { display:flex; align-items:flex-end; gap:0; min-height:154px; margin:22px 0; padding:20px 12px 0; overflow-x:auto; border-radius:16px; background:linear-gradient(#deece7 0 58%,#b9d2c9 58% 63%,#d7c5a6 63%); }
+    .pier-wrap { flex:1 0 130px; display:grid; grid-template-rows:auto 60px; justify-items:center; position:relative; }
+    .pier-wrap:not(:last-child)::after { content:""; position:absolute; top:26px; left:67%; width:66%; height:8px; border-radius:6px; background:#7f6b4b; }
+    .pier-wrap.broken:not(:last-child)::after { background:repeating-linear-gradient(90deg,#7f6b4b 0 40%,transparent 40% 58%,#7f6b4b 58%); }
+    .pier { position:relative; z-index:2; display:grid; gap:2px; min-width:112px; padding:9px; border:3px solid var(--path-color,#1d5849); border-radius:12px; background:white; text-align:center; }
+    .pier small { color:var(--path-color,#1d5849); font-weight:900; }
+    .pier strong { font-size:13px; }
+    .column { width:30px; height:60px; background:#9d8b6e; clip-path:polygon(20% 0,80% 0,100% 100%,0 100%); }
+    .empty-pier { border-style:dashed; color:#8b948f; background:#f6f7f4; }
+    .answers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .answer { padding:14px; text-align:left; border:1px solid var(--line); border-radius:12px; color:var(--ink); background:white; }
+    .answer:hover { border-color:var(--path-color,#1d5849); }
+    .answer.selected { border:2px solid var(--path-color,#1d5849); background:#eef6f2; }
+    .answer.wrong { border-color:var(--red); background:#faebe7; }
+    .feedback { margin-top:16px; padding:15px; border-radius:13px; }
+    .feedback.correct { color:#1c5c49; background:#dff1e9; }
+    .feedback.wrong { color:#753d35; background:#fae8e3; }
+    .feedback strong { display:block; }
+    .feedback p { margin:5px 0 0; }
+    .repair { margin-top:12px; padding:14px; border:1px solid #e7cda9; border-radius:13px; background:#fff6e8; }
+    .repair span { color:#9a5b26; font-size:11px; font-weight:900; }
+    .repair p { margin:5px 0 0; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:17px; }
+    .primary,.secondary { padding:10px 14px; border-radius:10px; font-weight:800; }
+    .primary { border:0; color:white; background:var(--path-color,#1d5849); }
+    .secondary { border:1px solid var(--line); color:var(--ink); background:white; }
+    .walkthroughs { padding:18px; }
+    .walkthroughs h2 { margin:0; font-size:19px; }
+    .scenario-tabs { display:flex; flex-wrap:wrap; gap:7px; margin:12px 0; }
+    .scenario-tab { padding:8px 10px; border:1px solid var(--line); border-radius:999px; background:white; }
+    .scenario-tab.active { color:white; background:var(--green); }
+    .scenario-panel { padding:14px; border-radius:12px; background:#f1f4f1; }
+    .scenario-panel p { margin:0 0 10px; color:var(--muted); }
+    .scenario-steps { display:flex; flex-wrap:wrap; gap:7px; }
+    .scenario-steps button { padding:8px 10px; border:1px solid #b8c5bf; border-radius:8px; background:white; }
+    .debug { margin-top:12px; }
+    .debug summary { color:var(--muted); cursor:pointer; }
+    .debug pre { overflow:auto; padding:12px; border-radius:10px; color:#d9eee6; background:#122f28; font:12px/1.5 Consolas,monospace; }
+    .complete { padding:28px; text-align:center; }
+    .complete .medal { display:grid; place-items:center; width:78px; height:78px; margin:0 auto 14px; border-radius:50%; color:#173d34; background:#ffb47f; font-size:34px; }
+    .complete h3 { margin:0; font-size:27px; }
+    .complete p { color:var(--muted); }
+    @media(max-width:900px){ .intro{grid-template-columns:1fr}.main{grid-template-columns:1fr}.sidebar{position:static;max-height:none}.path-list{grid-template-columns:repeat(2,minmax(0,1fr))}.answers{grid-template-columns:1fr} }
+    @media(max-width:560px){ .topbar{align-items:flex-start}.brand span{display:none}.nav a:first-child{display:none}.intro,.main{padding-left:12px;padding-right:12px}.intro-main,.state-card,.stage-body{padding:17px}.path-list{grid-template-columns:1fr}.gate-rail{overflow-x:auto;grid-template-columns:repeat(5,110px)}.stage-head{padding:17px}.stage-head h2{font-size:21px} }
+  </style>
+</head>
+<body>
+  <!-- PROTOTYPE — path-level challenge state machine. Session state is in memory and is not a permanent mastery record. -->
+  <div id="app"></div>
+  <script>
+  const PathChallenge = (() => {
+    const gates = [
+      { id:'cue', name:'识别用途', gap:'调用信号断连' },
+      { id:'assemble', name:'搭桥墩', gap:'节点顺序断连' },
+      { id:'relation', name:'铺连接', gap:'关系理由断连' },
+      { id:'missing', name:'找断桥', gap:'缺失节点定位断连' },
+      { id:'transfer', name:'换题迁移', gap:'题面到模型调用断连' }
+    ];
+    const lessons = [
+      L('T1','价态—反应角色判定','#d46b3c','判断氧化剂、还原剂或氧化/还原产物',['氧化剂/还原剂','试剂作用','氧化产物'],[['O3','同一元素前后载体'],['R4','氧化数'],['C1/C2','升高或降低'],['A1/A2','反应角色']],'只有比较同一元素前后价态，角色命名才有事实依据。','流程中 Pb(+4) 变为 Pb(+2)，加入的试剂 X 应先如何判断？',['先判断 Pb 得电子，再反推 X 的角色','看 X 是否是常见氧化剂','直接背物质名称','只配平氢氧原子'],0,'只画“前载体—价态箭头—后载体”，暂不写完整方程式。'),
+      L('T2','陌生方程式与半反应配平','#367c6a','书写陌生离子方程式、半反应或检查配平',['离子方程式','半反应','陌生产物配平'],[['O2','实际反应粒子'],['R4','价态差'],['Q3','电子守恒'],['Q5','原子电荷检查']],'价态差先给出电子骨架，介质再约束 H、O 和电荷如何补齐。','碱性介质中书写某陌生半反应，第一步应做什么？',['先找变化中心和每份电子差','先随意补 H+','先把所有系数设为 1','只检查原子不检查电荷'],0,'只配一支半反应，按“中心元素→O→H→电荷”检查。'),
+      L('T3','电化学方向、电极与迁移','#3479a7','判断阴阳极、电子方向、膜与离子迁移',['充电/放电','阴极/阳极','离子交换膜'],[['O3','两极物质变化'],['R4','价态方向'],['X2','阴极还原阳极氧化'],['X4','离子迁移与电中性']],'先定电极反应，电子与离子方向才有共同起点。','装置换成充电状态且有阳离子膜，第一步应做什么？',['写出当前状态下两极实际物质变化','沿用放电时正负极结论','只按异性相吸判断迁移','先代入法拉第常数'],0,'只做“物质变化→氧化/还原→阴/阳极”三步映射。'),
+      L('T4','电子当量与氧化还原定量','#8c66b8','求转移电子数、质量体积、含量或电池容量',['转移电子数','质量/体积','电量与容量'],[['O3','定量中心前后载体'],['Q1','每原子电子差'],['Q2','总电子当量'],['Q4','电子到目标物计量比']],'每原子差、原子个数和反应份数必须依次合并，不能漏乘或重复计数。','已知电量求产物质量，哪座桥不能省？',['先由 Q=n(e-)F 得电子物质的量','电量直接乘产物系数','两极电子数相加','只看产物摩尔质量'],0,'画两列表：左列 n(e-)，右列目标物，只填一组反应对应量。'),
+      L('T5','实验现象—微观结论证据链','#c18d22','从颜色、气体或沉淀判断物种变化与结论',['颜色/气体/沉淀','对照实验','现象能否证明'],[['O1','待证明结论'],['X8','原始现象'],['O2','直接产生现象的物种'],['R4','价态变化证据']],'现象必须先落到直接物种，才能限制可支持的微观结论。','观察到溶液褪色，最先应记录什么？',['谁直接导致颜色变化及观察条件','立刻断言唯一机理','只写氧化性很强','忽略空白对照'],0,'只写三格：“观察→直接物种→最多支持的结论”。'),
+      L('T6','工业流程中的载体、价态与试剂作用','#6f7d35','沿工艺流程判断转化、试剂作用和关键反应',['浸取—转化—分离','试剂作用','目标元素收率'],[['X9','目标元素载体链'],['O3','步骤前后载体'],['R4','是否变价'],['A3','试剂实际作用']],'先追踪目标元素，才能区分氧化还原试剂、介质试剂和分离试剂。','流程箭头很多且加入多种试剂，第一步怎样减负？',['只画目标元素的载体链','给每个试剂贴氧化剂标签','先计算总收率','先记所有设备名称'],0,'把其他试剂暂时遮住，只保留目标元素前后物种。'),
+      L('T7','歧化、归中与同元素多价态','#bb4e73','判断歧化、归中及同一物质的双重角色',['歧化/归中','中间价态','同元素多价态'],[['O3','同元素不同去向'],['R4','各支价态'],['X6','价态数轴箭头'],['Q3','总升降守恒']],'把各支放上价态数轴，才能看出一分为二还是两端汇合。','判断某反应是否歧化，最小动作是什么？',['画起点和终点价态数轴','数生成物个数','看是否有氧气','看反应物是否只有一种'],0,'只画价态数轴和箭头，不写物质名称与方程式。'),
+      L('T8','氧化还原滴定、终点与误差','#6e6460','处理滴定计量、终点现象与误差方向',['标准液与终点','含量测定','偏高/偏低'],[['O1','目标量'],['Q6','反应与滴加时序'],['X8','终点现象'],['Q7','读数到结果']],'先区分实际反应量和读数，误差方向才能逐箭头传到结果。','某操作导致结果偏高，第一步该问什么？',['它先改变实际消耗还是体积读数','直接背仰小俯大','只看答案正负号','先重做整道题'],0,'只画“操作→V 或实际量↑↓→回算结果↑↓”。'),
+      L('T9','氧化数赋值、平均价与结构推断','#7659a6','求氧化数、平均价或由组成推断价态',['求氧化数','平均化合价','结构与组成'],[['R1','粒子边界与总电荷'],['R5','赋值代数式'],['R4','氧化数结果'],['B1','形式数值边界']],'先圈定粒子整体，代数和才知道应等于 0 还是离子电荷。','求多原子离子中心元素氧化数，第一行写什么？',['各元素氧化数代数和等于整体电荷','中心元素等于离子电荷','所有元素都按常见价','先判断氧化剂'],0,'连续练三次“圈边界→写代数和”，停止在列式。'),
+      L('T10','氧化还原强弱与反应可行性','#347d76','比较氧化性还原性、判断能否发生或先后顺序',['强弱比较','能否发生','反应先后'],[['O2','具体比较物种'],['Q6','介质与条件'],['X7','反应事实或电势'],['B3','排除只看高价态']],'强弱属于具体反应对和条件，氧化数只提供变化空间。','两个高价物种比较氧化性，缺少什么不能下结论？',['具体反应事实、条件或电势证据','元素所在周期','氧原子个数','化学式长短'],0,'只做“具体反应对—条件—观察方向”的两物种比较。'),
+      L('T11','过氧化物与特殊氧化数边界','#c0644c','处理 H2O2、过氧化物、超氧化物的价态与角色',['H2O2','过氧化物','特殊氧化数'],[['R1','特殊结构单元'],['R5','特殊赋值规则'],['R4','反应前后氧价'],['A3','按实际去向命名角色']],'特殊结构先修正规则，同一物质的角色还必须由实际产物决定。','H2O2 在反应中是什么剂，首先看什么？',['它最终变成 O2 还是 H2O','题目是否出现酸','它名称中是否有氧','默认永远是氧化剂'],0,'只做三张去向卡：到 O2、到 H2O、同时两向。'),
+      L('T12','金属腐蚀与电化学保护','#8b7434','判断腐蚀快慢、牺牲阳极和外加电流保护',['腐蚀快慢','牺牲阳极','电镀/保护'],[['O2','金属介质与接触'],['C1','金属氧化溶解'],['X2','阳极过程'],['X7','材料与装置条件']],'只有电子和离子回路都成立，活泼性差异才能转化为持续电化学过程。','两种金属放在潮湿环境中，判断腐蚀前先确认什么？',['是否接触并形成闭合电化学回路','哪块金属更重','金属颜色','是否都写在题干第一行'],0,'画“阳极金属→电子→阴极”的极简回路。'),
+      L('T13','有机反应中的氧化还原中心','#a45277','判断醇醛酸、燃烧或还原糖反应中的变化中心',['醇醛酸','燃烧','银镜/还原糖'],[['O2','关键碳原子'],['R2','键的形式电子归属'],['X11','氧化程度变化'],['C3','氧化或还原命名']],'追踪关键碳的成键环境，避免把整分子得氧失氢当万能规则。','醇变醛时应圈出哪个对象比较？',['官能团中成键改变的碳','分子中全部氢原子','所有碳的平均值','催化剂中的金属'],0,'只比较一个关键碳周围的 C—H、C—O、C=O 键。'),
+      L('T14','中间体、催化循环与竞争反应','#4f7185','处理串联中间体、催化剂再生和副反应选择性',['中间体浓度','催化循环','竞争/选择性'],[['O2','逐步生成与消耗'],['X10','净速率'],['Q6','条件选择通道'],['B2','净式不等于机理']],'中间体的净变化由生成与消耗共同决定，总方程不能唯一反推机理。','中间体浓度升降取决于什么？',['生成速率与消耗速率的差','只看它是否出现在总反应物','只看价态高低','只看催化剂用量'],0,'上下写两步反应，划掉相消物种，再写“生成－消耗”。')
+    ];
+    function L(id,name,color,use,cues,nodes,why,transfer,options,correct,repair){ return {id,name,color,use,cues,nodes:nodes.map(n=>({id:n[0],name:n[1]})),why,transfer,options,correct,repair}; }
+    const initial = () => ({ lessonId:null, gate:0, status:'selecting', assembled:[], selected:null, feedback:null, hintLevel:0, attempts:0, wrongByGate:{}, evidence:[], candidateGap:null, lastAction:'等待选择一条路径', scenario:'完整建桥' });
+    function lesson(state){ return lessons.find(x=>x.id===state.lessonId); }
+    function choicesFor(state){
+      const x=lesson(state); if(!x) return [];
+      if(state.gate===0) return [x.cues[0],'看见熟悉物质就直接套结论','只根据题目来自哪一年分类','先做所有数值计算'];
+      if(state.gate===1) return x.nodes.map(n=>n.id);
+      if(state.gate===2) return [x.why,'这些节点属于同一章，所以可以相连','只要记住顺序，不需要适用条件','后一个节点名称更像答案'];
+      if(state.gate===3){ const miss=x.nodes[2]; return [miss.id,x.nodes[0].id,x.nodes[1].id,x.nodes[3].id]; }
+      return x.options;
+    }
+    function expected(state){ const x=lesson(state); if(state.gate===0)return x.cues[0]; if(state.gate===1)return x.nodes[state.assembled.length].id; if(state.gate===2)return x.why; if(state.gate===3)return x.nodes[2].id; return x.options[x.correct]; }
+    function reduce(state,action){
+      let s={...state,wrongByGate:{...state.wrongByGate},evidence:state.evidence.slice(),assembled:state.assembled.slice(),lastAction:action.type};
+      if(action.type==='RESET') return initial();
+      if(action.type==='SELECT_PATH') return {...initial(),lessonId:action.id,status:'playing',lastAction:'选择 '+action.id,scenario:state.scenario};
+      if(action.type==='SET_SCENARIO') { const base={...initial(),scenario:action.name}; if(action.lessonId) return {...base,lessonId:action.lessonId,gate:action.gate||0,status:'playing',lastAction:'启动演示：'+action.name}; return base; }
+      if(action.type==='HINT'){ s.hintLevel=Math.min(2,s.hintLevel+1); s.lastAction='增加一级提示'; return s; }
+      if(action.type==='NEXT'){ if(s.feedback?.correct){ if(s.gate===4){s.status='complete';s.lastAction='完成一轮路径建桥';}else{s.gate++;s.selected=null;s.feedback=null;s.hintLevel=0;s.assembled=[];s.lastAction='进入下一关';} } return s; }
+      if(action.type==='ANSWER'){
+        const ok=action.value===expected(s); s.attempts++; s.selected=action.value;
+        if(ok){
+          if(s.gate===1){ s.assembled.push(action.value); if(s.assembled.length<lesson(s).nodes.length){s.feedback={correct:true,partial:true,text:'桥墩位置正确，继续选择下一个节点。'};s.selected=null;return s;} }
+          s.feedback={correct:true,text:['识别到了启动这条路径的任务信号。','桥墩顺序已经形成可执行路径。','你说清了连接成立的理由，而不是只背顺序。','你定位到了最早缺失的桥段。','换了题面后仍重新调用了主干。'][s.gate]};
+          s.evidence.push({gate:gates[s.gate].id,result:'一次支持',hintLevel:s.hintLevel}); s.candidateGap=null;
+        } else {
+          s.wrongByGate[gates[s.gate].id]=(s.wrongByGate[gates[s.gate].id]||0)+1;
+          s.candidateGap=gates[s.gate].gap;
+          s.feedback={correct:false,text:'这个选择暂时不能完成当前桥段。它只构成候选断连证据，不等于已经证明“不会”。'};
+          s.evidence.push({gate:gates[s.gate].id,result:'候选偏离',choice:action.value,hintLevel:s.hintLevel});
+        }
+        return s;
+      }
+      return s;
+    }
+    return {gates,lessons,initial,lesson,choicesFor,expected,reduce};
+  })();
+
+  let state=PathChallenge.initial(); let activeScenario=0;
+  const scenarios=[
+    {name:'完整建桥',desc:'从任务信号开始，依次完成五关，观察每一步如何累积为一次迁移支持。',lessonId:'T3',gate:0},
+    {name:'断桥定位',desc:'直接进入“找断桥”，测试错误是否只落到最早缺失连接，而不是给学生贴笼统标签。',lessonId:'T1',gate:3},
+    {name:'迁移验证',desc:'直接换一个题面，只观察学生能否重新调用主干；成功仍只记一次支持。',lessonId:'T6',gate:4}
+  ];
+  function esc(v){return String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function dispatch(action){ state=PathChallenge.reduce(state,action); render(); }
+  function bridge(x,gate){
+    if(!x)return '';
+    let shown=x.nodes.map((n,i)=>{
+      const visible=gate===3&&i===2?false:(gate!==1||state.assembled.indexOf(n.id)>=0); const broken=gate===3&&i===1;
+      return `<div class="pier-wrap ${broken?'broken':''}"><div class="pier ${visible?'':'empty-pier'}"><small>${visible?esc(n.id):'?'}</small><strong>${visible?esc(n.name):'待选择桥墩'}</strong></div><div class="column"></div></div>`;
+    }).join(''); return `<div class="bridge">${shown}</div>`;
+  }
+  function stageBody(){
+    const x=PathChallenge.lesson(state);
+    if(!x)return `<div class="complete"><div class="medal">桥</div><h3>先选择一条路径开始造桥</h3><p>每条路径都用五关展示：何时调用、节点顺序、连接理由、断点定位和换题迁移。</p></div>`;
+    if(state.status==='complete')return `<div class="complete"><div class="medal">✓</div><h3>${esc(x.name)}：本轮建桥完成</h3><p>获得 ${state.evidence.filter(e=>e.result==='一次支持').length} 条过程支持，出现 ${Object.values(state.wrongByGate).reduce((a,b)=>a+b,0)} 次候选偏离。这里只记录本轮表现，不写“永久掌握”。</p><div class="actions" style="justify-content:center"><button class="primary" data-action="restart">再走一次</button><button class="secondary" data-action="reset">换一条路径</button></div></div>`;
+    const prompts=[
+      ['第一关 · 看见用途','哪一个题目信号出现时，应启动这条路径？','先识别任务，而不是见到熟悉物质就套结论。'],
+      ['第二关 · 搭桥墩','按解题时真正需要的顺序，逐个放置知识节点。','只选下一个节点；顺序错能暴露最早的调用断点。'],
+      ['第三关 · 铺连接','为什么前后节点可以连起来？','必须说出关系与成立理由，“相关”不能算桥面。'],
+      ['第四关 · 找断桥','这条路径缺失了哪一个关键节点？','定位最早缺口，避免把后续连锁错误都当成新问题。'],
+      ['第五关 · 换题迁移',x.transfer,'题面改变，底层主干保持不变。']
+    ][state.gate];
+    const answers=PathChallenge.choicesFor(state).map(v=>{ const n=x.nodes.find(n=>n.id===v); const label=n?`${n.id} · ${n.name}`:v; const cls=state.selected===v?(state.feedback?.correct?'selected':'wrong'):''; return `<button class="answer ${cls}" data-answer="${esc(v)}">${esc(label)}</button>`; }).join('');
+    const hint=state.hintLevel===0?'':state.hintLevel===1?`提示 1：只看这条路径的用途——${x.use}。`:`提示 2：当前正确桥段来自 ${x.nodes.map(n=>n.id).join(' → ')}，但仍请自己说明理由。`;
+    const feedback=state.feedback?`<div class="feedback ${state.feedback.correct?'correct':'wrong'}"><strong>${state.feedback.correct?'本步成立':'出现候选断连'}</strong><p>${esc(state.feedback.text)}</p></div>`:'';
+    const repair=state.feedback&&!state.feedback.correct?`<div class="repair"><span>MINIMUM REPAIR · 只修这一小段</span><p>${esc(x.repair)}</p></div>`:'';
+    return `<div class="stage-body"><div class="stage-prompt"><small>${prompts[0]}</small><h3>${esc(prompts[1])}</h3><p>${esc(prompts[2])}</p></div>${bridge(x,state.gate)}<div class="answers">${answers}</div>${hint?`<div class="repair"><span>渐进提示 ${state.hintLevel}/2</span><p>${esc(hint)}</p></div>`:''}${feedback}${repair}<div class="actions"><button class="secondary" data-action="hint">增加一级提示</button>${state.feedback?.correct&&!state.feedback.partial?'<button class="primary" data-action="next">进入下一关</button>':''}<button class="secondary" data-action="restart">重走本路径</button></div></div>`;
+  }
+  function render(){
+    const x=PathChallenge.lesson(state); const wrong=Object.values(state.wrongByGate).reduce((a,b)=>a+b,0);
+    document.querySelector('#app').innerHTML=`<div class="shell"><header class="topbar"><div class="brand"><div class="brand-mark">桥</div><div><strong>氧化还原路径闯关</strong><span>PROTOTYPE · session only</span></div></div><nav class="nav"><a href="./index.html">知识地图</a><a href="./challenge.html">节点闯关</a></nav></header>
+    <section class="intro"><article class="intro-main"><span class="label">PATH BRIDGE CHALLENGE / LOGIC PROTOTYPE</span><h1>不是背节点，而是亲手把路径造出来</h1><p>这一页检验的设计问题是：五关状态机能否让学生理解每个节点为什么重要，并用最早错误定位候选断连，再给出只修一个桥段的训练。</p><div class="question-box"><strong>证据边界</strong>答错只记录“本轮候选偏离”；答对只记录“一次过程支持”。提示后答对不会被当成无提示掌握。</div></article><aside class="state-card"><span class="label">CURRENT STATE</span><h2>本轮状态完整可见</h2><div class="state-grid"><span>当前路径</span><strong>${x?esc(x.id):'未选择'}</strong><span>当前关卡</span><strong>${x?`${state.gate+1}/5`:'—'}</strong><span>作答次数</span><strong>${state.attempts}</strong><span>候选偏离</span><strong>${wrong}</strong><span>过程支持</span><strong>${state.evidence.filter(e=>e.result==='一次支持').length}</strong><span>提示强度</span><strong>I${state.hintLevel}</strong></div>${state.candidateGap?`<div class="candidate"><strong>当前候选断连：</strong>${esc(state.candidateGap)}<br>仍需后续最小探针区分竞争解释。</div>`:''}</aside></section>
+    <main class="main"><aside class="sidebar"><h2>选择一座桥</h2><p>14 条一级主干都可以独立闯关。</p><div class="path-list">${PathChallenge.lessons.map(l=>`<button class="path-choice ${state.lessonId===l.id?'active':''}" style="--path-color:${l.color}" data-path="${l.id}"><span>${l.id}</span><strong>${esc(l.name)}</strong></button>`).join('')}</div></aside><div class="content"><section class="stage" style="--path-color:${x?x.color:'#1d5849'}"><header class="stage-head"><div><span class="label" style="color:#ffbb8b">${x?x.id:'SELECT PATH'}</span><h2>${x?esc(x.name):'路径造桥场'}</h2><p>${x?esc(x.use):'从左侧选择一条路径。'}</p></div><div class="gate-count"><strong>${x?state.gate+1:'—'}</strong><span>/ 5 关</span></div></header>${x?`<div class="gate-rail">${PathChallenge.gates.map((g,i)=>`<button class="gate ${i===state.gate?'active':i<state.gate?'done':''}" data-gate="${i}">${i+1}. ${g.name}</button>`).join('')}</div>`:''}${stageBody()}</section>
+    <section class="walkthroughs"><h2>设计验收演示</h2><div class="scenario-tabs">${scenarios.map((s,i)=>`<button class="scenario-tab ${i===activeScenario?'active':''}" data-scenario="${i}">${esc(s.name)}</button>`).join('')}</div><div class="scenario-panel"><p>${esc(scenarios[activeScenario].desc)}</p><div class="scenario-steps"><button data-demo="start">① 建立已知状态</button><button data-demo="wrong">② 模拟一次错误</button><button data-demo="hint">③ 增加提示</button><button data-demo="correct">④ 提交正确桥段</button></div></div><details class="debug"><summary>查看完整原型状态（用于检查状态机）</summary><pre>${esc(JSON.stringify(state,null,2))}</pre></details></section></div></main></div>`;
+    bind();
+  }
+  function bind(){
+    document.querySelectorAll('[data-path]').forEach(b=>b.onclick=()=>dispatch({type:'SELECT_PATH',id:b.dataset.path}));
+    document.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>dispatch({type:'ANSWER',value:b.dataset.answer}));
+    document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{ if(b.dataset.action==='hint')dispatch({type:'HINT'}); if(b.dataset.action==='next')dispatch({type:'NEXT'}); if(b.dataset.action==='restart')dispatch({type:'SELECT_PATH',id:state.lessonId}); if(b.dataset.action==='reset')dispatch({type:'RESET'}); });
+    document.querySelectorAll('[data-scenario]').forEach(b=>b.onclick=()=>{activeScenario=+b.dataset.scenario;render();});
+    document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>{ const s=scenarios[activeScenario]; if(b.dataset.demo==='start')dispatch({type:'SET_SCENARIO',name:s.name,lessonId:s.lessonId,gate:s.gate}); if(b.dataset.demo==='wrong'){ if(!state.lessonId)dispatch({type:'SET_SCENARIO',name:s.name,lessonId:s.lessonId,gate:s.gate}); const choices=PathChallenge.choicesFor(state); dispatch({type:'ANSWER',value:choices.find(v=>v!==PathChallenge.expected(state))}); } if(b.dataset.demo==='hint')dispatch({type:'HINT'}); if(b.dataset.demo==='correct')dispatch({type:'ANSWER',value:PathChallenge.expected(state)}); });
+  }
+  render();
+  </script>
+</body>
+</html>

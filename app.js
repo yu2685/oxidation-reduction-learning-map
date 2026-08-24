@@ -1395,6 +1395,7 @@
           '<button class="ghost-button archetype-library-button" data-action="open-archetypes">题型路径 <strong>' + pathArchetypes.length + '</strong></button>',
           '<button class="ghost-button question-library-button" data-action="open-library">真题库 <strong>' + Object.keys(questionBank).length + '</strong></button>',
           '<a class="primary-button challenge-entry" href="./challenge.html">节点闯关</a>',
+          '<a class="primary-button challenge-entry path-challenge-entry" href="./path-challenge-prototype.html">路径闯关</a>',
           '<span class="state-pill"><strong>' + observed + '</strong> 条证据标记</span>',
           '<button class="ghost-button" data-action="show-state">查看状态</button>',
         '</div>',
