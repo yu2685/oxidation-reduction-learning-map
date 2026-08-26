@@ -72,6 +72,17 @@ a { color: inherit; }
 .progress-track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #f4bc55); }
 .home-notice { margin-top: 18px; padding: 13px 16px; border: 1px solid #e7c48d; border-radius: 13px; background: #fff6e6; color: #77511f; }
 
+.category-picker { margin: 20px 0; padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: rgba(255,253,248,.86); }
+.category-picker > header { display: flex; align-items: end; justify-content: space-between; gap: 22px; margin-bottom: 15px; }
+.category-picker h2 { margin: 5px 0 0; font-size: 25px; }
+.category-picker header p { max-width: 520px; margin: 0; color: var(--muted); font-size: 13px; text-align: right; }
+.category-picker > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.category-card { min-height: 112px; display: grid; align-content: center; gap: 2px; padding: 14px; border: 1px solid var(--line); border-left: 5px solid var(--category-color); border-radius: 14px; background: white; text-align: left; cursor: pointer; }
+.category-card:hover, .category-card.active { border-color: var(--category-color); background: color-mix(in srgb, var(--category-color) 8%, white); box-shadow: inset 0 0 0 1px var(--category-color); }
+.category-card strong { font-size: 16px; }
+.category-card span, .category-card small { color: var(--muted); font-size: 11px; }
+.category-card small { margin-top: 5px; color: var(--category-color); font-weight: 900; }
+
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 20px 0; }
 .stat-card {
   display: grid; gap: 4px; min-height: 145px; padding: 22px; border: 1px solid var(--line);
@@ -234,6 +245,7 @@ a { color: inherit; }
   .session-score { display: none; }
   .challenge-question-card { padding: 28px; }
   .archive-grid { grid-template-columns: 1fr; }
+  .category-picker > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 580px) {
@@ -246,6 +258,11 @@ a { color: inherit; }
   .challenge-hero { min-height: 0; padding: 25px 21px; border-radius: 22px; }
   .challenge-hero h1 { font-size: 36px; }
   .challenge-hero p { font-size: 16px; }
+  .category-picker { padding: 17px; }
+  .category-picker > header { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .category-picker header p { text-align: left; }
+  .category-picker > div { grid-template-columns: 1fr 1fr; gap: 7px; }
+  .category-card { min-height: 105px; padding: 12px; }
   .stats-grid { gap: 9px; }
   .stat-card { min-height: 128px; padding: 17px; }
   .stat-card strong { font-size: 28px; }

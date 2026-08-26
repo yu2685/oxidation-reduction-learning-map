@@ -3,6 +3,7 @@
 
   var meta = window.nodeLearningMeta || { layers: {}, nodes: [] };
   var nodes = meta.nodes || [];
+  var categories = meta.categories || {};
   var nodeById = {};
   nodes.forEach(function (item) { nodeById[item.id] = item; });
 
@@ -11,6 +12,7 @@
   var archive = loadArchive();
   var state = {
     view: 'home',
+    nodeCategory: 'all',
     archiveFilter: 'all',
     session: null,
     modalNodeId: null,
@@ -66,15 +68,31 @@
     return { name: '未练习', note: '还没有作答证据', className: 'unseen' };
   }
 
-  function archiveStats() {
+  function archiveStats(list) {
     var stats = { provisional: 0, review: 0, unseen: 0, wrong: 0, correct: 0 };
-    nodes.forEach(function (item) {
+    (list || nodes).forEach(function (item) {
       var status = nodeStatus(item.id);
       stats[status] += 1;
       stats.wrong += recordFor(item.id).wrong;
       stats.correct += recordFor(item.id).correct;
     });
     return stats;
+  }
+
+  function activeNodes() {
+    return state.nodeCategory === 'all'
+      ? nodes
+      : nodes.filter(function (item) { return item.category === state.nodeCategory; });
+  }
+
+  function categoryCards() {
+    var entries = [{ id: 'all', name: '全部节点', note: '跨专题混合调用', color: '#123d35' }].concat(Object.keys(categories).map(function (id) {
+      return { id: id, name: categories[id].name, note: categories[id].note, color: categories[id].color };
+    }));
+    return '<section class="category-picker"><header><div><span class="prototype-label">NODE DOMAINS</span><h2>选择本轮要连接的知识域</h2></div><p>氧化还原仍保留完整 39 节点；新增节点不会把一次答对写成永久掌握。</p></header><div>' + entries.map(function (category) {
+      var count = category.id === 'all' ? nodes.length : nodes.filter(function (item) { return item.category === category.id; }).length;
+      return '<button class="category-card ' + (state.nodeCategory === category.id ? 'active' : '') + '" style="--category-color:' + category.color + '" data-action="set-category" data-id="' + category.id + '"><strong>' + esc(category.name) + '</strong><span>' + esc(category.note) + '</span><small>' + count + ' 个节点</small></button>';
+    }).join('') + '</div></section>';
   }
 
   function shuffle(list) {
@@ -157,12 +175,13 @@
     return [
       '<div class="challenge-shell">',
         '<header class="challenge-topbar">',
-          '<a class="challenge-brand" href="./challenge.html"><span>关</span><div><strong>氧化还原节点闯关</strong><small>广义陈述 · 主动回忆 · 最小纠错</small></div></a>',
+          '<a class="challenge-brand" href="./challenge.html"><span>关</span><div><strong>高中化学节点闯关</strong><small>跨专题节点 · 主动回忆 · 最小纠错</small></div></a>',
           '<nav>',
             '<a href="./index.html">返回知识地图</a>',
             '<a href="./path-challenge-prototype.html">路径闯关</a>',
+            '<a href="./subjective-challenge.html">主观题型闯关</a>',
             '<button class="nav-button ' + (active === 'archive' ? 'active' : '') + '" data-action="show-archive">学习归档</button>',
-            '<span class="nav-stat">暂时掌握 <strong>' + stats.provisional + '</strong>/39</span>',
+            '<span class="nav-stat">暂时掌握 <strong>' + stats.provisional + '</strong>/' + nodes.length + '</span>',
           '</nav>',
         '</header>',
         content,
@@ -177,25 +196,27 @@
   }
 
   function renderHome() {
-    var stats = archiveStats();
-    var practiced = nodes.length - stats.unseen;
-    var progress = Math.round(practiced / nodes.length * 100);
+    var currentPool = activeNodes();
+    var stats = archiveStats(currentPool);
+    var practiced = currentPool.filter(function (item) { return nodeStatus(item.id) !== 'unseen'; }).length;
+    var progress = Math.round(practiced / currentPool.length * 100);
     var notice = state.notice ? '<div class="home-notice">' + esc(state.notice) + '</div>' : '';
     return shell([
       '<main class="challenge-home">',
         '<section class="challenge-hero">',
           '<div>',
             '<span class="prototype-label">LEARNING LOOP / PROTOTYPE</span>',
-            '<h1>像背单词一样，逐个连接<br>氧化还原的核心节点</h1>',
-            '<p>每轮只面对一个广义陈述。答错时只打开该节点的小卡片，不跳去刷整道题。</p>',
+            '<h1>像背单词一样，逐个连接<br>高中化学的核心节点</h1>',
+            '<p>保留氧化还原 39 节点，并加入反应原理、实验、无机、有机和结构等知识域。每轮只面对一个广义陈述。</p>',
           '</div>',
           '<div class="hero-progress">',
             '<div><strong>' + progress + '%</strong><span>已有练习证据</span></div>',
             '<div class="progress-track"><span style="width:' + progress + '%"></span></div>',
-            '<small>' + practiced + ' / 39 个节点至少作答过一次</small>',
+            '<small>' + practiced + ' / ' + currentPool.length + ' 个当前知识域节点至少作答过一次</small>',
           '</div>',
         '</section>',
         notice,
+        categoryCards(),
         '<section class="stats-grid">',
           statCard(stats.provisional, '暂时掌握', '连续 2 次无提示正确', 'provisional'),
           statCard(stats.review, '待巩固', '包含最近答错的节点', 'review'),
@@ -206,7 +227,7 @@
           '<article class="start-card primary-start">',
             '<span>混合闯关</span><h2>开始一轮主动回忆</h2>',
             '<p>填空、判断、选择交替出现。先调用广义陈述，再看具体题目。</p>',
-            '<label>本轮节点数<select id="round-size"><option value="8">8 个 · 轻量</option><option value="15" selected>15 个 · 标准</option><option value="39">39 个 · 全量</option></select></label>',
+            '<label>本轮节点数<select id="round-size"><option value="8">8 个 · 轻量</option><option value="15" selected>15 个 · 标准</option><option value="' + currentPool.length + '">' + currentPool.length + ' 个 · 当前知识域全量</option></select></label>',
             '<button class="main-action" data-action="start-session" data-mode="mixed">开始闯关</button>',
           '</article>',
           '<article class="start-card review-start">',
@@ -218,7 +239,7 @@
           '<article class="start-card rules-card">',
             '<span>归档规则</span><h2>“掌握”只是暂时证据</h2>',
             '<ol><li>首次答对：仍在待巩固。</li><li>连续两次无提示正确：记为暂时掌握。</li><li>之后答错：立即回到待巩固。</li></ol>',
-            '<button class="text-action" data-action="show-archive">查看 39 个节点归档 →</button>',
+            '<button class="text-action" data-action="show-archive">查看 ' + nodes.length + ' 个节点归档 →</button>',
           '</article>',
         '</section>',
       '</main>'
@@ -331,15 +352,15 @@
 
   function renderArchive() {
     var filters = [
-      { id: 'all', name: '全部 39' },
+      { id: 'all', name: '全部 ' + activeNodes().length },
       { id: 'provisional', name: '暂时掌握' },
       { id: 'review', name: '待巩固' },
       { id: 'unseen', name: '未练习' }
     ];
-    var visible = nodes.filter(function (node) { return state.archiveFilter === 'all' || nodeStatus(node.id) === state.archiveFilter; });
+    var visible = activeNodes().filter(function (node) { return state.archiveFilter === 'all' || nodeStatus(node.id) === state.archiveFilter; });
     return shell([
       '<main class="archive-page">',
-        '<header class="archive-head"><div><span class="prototype-label">LOCAL LEARNING ARCHIVE</span><h1>39 个节点学习归档</h1><p>记录正确、错误、连续正确与最近练习；只代表当前浏览器中的证据。</p></div><button class="secondary-action" data-action="go-home">返回闯关首页</button></header>',
+        '<header class="archive-head"><div><span class="prototype-label">LOCAL LEARNING ARCHIVE</span><h1>' + activeNodes().length + ' 个节点学习归档</h1><p>当前知识域：' + esc(state.nodeCategory === 'all' ? '全部节点' : categories[state.nodeCategory].name) + '。记录只代表当前浏览器中的练习证据。</p></div><button class="secondary-action" data-action="go-home">返回闯关首页</button></header>',
         '<nav class="archive-filters">' + filters.map(function (filter) { return '<button class="' + (state.archiveFilter === filter.id ? 'active' : '') + '" data-action="archive-filter" data-id="' + filter.id + '">' + filter.name + '</button>'; }).join('') + '</nav>',
         '<div class="archive-grid">' + visible.map(renderArchiveCard).join('') + '</div>',
         visible.length ? '' : '<div class="archive-empty">当前分类还没有节点。</div>',
@@ -359,7 +380,7 @@
       pool = state.session.mistakeNodeIds.map(function (id) { return nodeById[id]; }).filter(Boolean);
       entryCount = Math.max(pool.length, Math.min(12, pool.length * 2));
     } else if (mode === 'review') {
-      pool = nodes.filter(function (node) { return nodeStatus(node.id) === 'review'; });
+      pool = activeNodes().filter(function (node) { return nodeStatus(node.id) === 'review'; });
       if (!pool.length) {
         state.notice = '目前没有待巩固节点。先完成一轮混合闯关，系统才有证据安排复习。';
         state.view = 'home';
@@ -369,7 +390,7 @@
       pool = shuffle(pool);
       entryCount = Math.max(pool.length, Math.min(requestedSize, pool.length * 2));
     } else {
-      pool = shuffle(nodes);
+      pool = shuffle(activeNodes());
       entryCount = Math.min(requestedSize, pool.length);
     }
     if (!pool.length) {
@@ -447,6 +468,7 @@
     if (!target) return;
     var action = target.getAttribute('data-action');
     if (action === 'go-home') { state.view = 'home'; state.modalNodeId = null; render(); }
+    else if (action === 'set-category') { state.nodeCategory = target.getAttribute('data-id'); state.notice = ''; render(); }
     else if (action === 'show-archive') { state.view = 'archive'; state.modalNodeId = null; render(); }
     else if (action === 'archive-filter') { state.archiveFilter = target.getAttribute('data-id'); render(); }
     else if (action === 'start-session') { startSession(target.getAttribute('data-mode')); }

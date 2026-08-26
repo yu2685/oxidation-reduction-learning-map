@@ -1,0 +1,76 @@
+:root { --ink:#17231f; --muted:#65736c; --deep:#143f37; --paper:#f2f0e7; --panel:#fffdf8; --line:#d7ddd6; --accent:#ef7b45; font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif; }
+* { box-sizing:border-box; }
+html,body { min-height:100%; }
+body { margin:0; color:var(--ink); font-size:17px; line-height:1.55; background:radial-gradient(circle at 10% -10%,#fff,transparent 35%),linear-gradient(145deg,#f4f0e6,#eaf1ec); }
+button,a { color:inherit; font:inherit; -webkit-tap-highlight-color:transparent; }
+.topbar { position:sticky; top:0; z-index:20; min-height:72px; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:12px 24px; border-bottom:1px solid rgba(20,63,55,.14); background:rgba(251,250,245,.93); backdrop-filter:blur(14px); }
+.brand { display:flex; align-items:center; gap:11px; text-decoration:none; }
+.brand-mark { width:45px; height:45px; display:grid; place-items:center; border-radius:14px; color:white; background:var(--deep); font-size:21px; font-weight:900; }
+.brand div { display:grid; }
+.brand strong { font-size:19px; }
+.brand small { color:var(--muted); font-size:11px; }
+.topbar nav { display:flex; flex-wrap:wrap; gap:7px; }
+.topbar nav a,.topbar nav button { padding:8px 11px; border:1px solid var(--line); border-radius:10px; background:white; text-decoration:none; cursor:pointer; }
+.page { width:min(1240px,calc(100% - 34px)); margin:24px auto 60px; }
+.hero { display:grid; grid-template-columns:1.25fr .75fr; gap:28px; align-items:center; padding:38px; border-radius:28px; color:white; background:radial-gradient(circle at 88% 16%,rgba(239,123,69,.3),transparent 30%),linear-gradient(135deg,#123a32,#236352); box-shadow:0 22px 60px rgba(27,50,41,.15); }
+.eyebrow { color:#f2b77e; font-size:11px; font-weight:900; letter-spacing:.13em; }
+.hero h1 { margin:10px 0 12px; font-size:clamp(34px,5vw,58px); line-height:1.08; }
+.hero p { margin:0; color:#d9ebe4; }
+.hero aside { display:grid; gap:10px; padding:21px; border:1px solid rgba(255,255,255,.18); border-radius:20px; background:rgba(255,255,255,.08); }
+.hero aside strong { font-size:36px; }
+.hero aside span,.hero aside small { color:#d4e6df; }
+.evidence-note { margin:16px 0; padding:12px 15px; border:1px solid #ddc691; border-radius:12px; background:#fff8e8; color:#72521e; font-size:13px; }
+.type-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px; }
+.type-card { min-height:260px; display:flex; flex-direction:column; padding:21px; border:1px solid var(--line); border-top:6px solid var(--type-color); border-radius:19px; background:var(--panel); box-shadow:0 10px 30px rgba(29,49,40,.07); }
+.type-card header { display:flex; justify-content:space-between; gap:10px; }
+.type-id { color:var(--type-color); font-size:12px; font-weight:900; }
+.record-pill { color:var(--muted); font-size:11px; }
+.type-card h2 { margin:8px 0 7px; font-size:23px; line-height:1.25; }
+.type-card p { margin:0 0 12px; color:var(--muted); font-size:14px; }
+.cue-list { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:15px; }
+.cue-list span { padding:4px 7px; border-radius:999px; background:#f0f3ef; font-size:11px; }
+.start-button,.answer,.action { border-radius:11px; cursor:pointer; }
+.start-button { width:100%; margin-top:auto; padding:11px; border:1px solid var(--type-color); color:white; background:var(--type-color); font-weight:800; }
+.challenge-layout { display:grid; grid-template-columns:270px minmax(0,1fr); gap:16px; margin-top:18px; }
+.type-nav { position:sticky; top:90px; align-self:start; max-height:calc(100vh - 110px); overflow:auto; padding:14px; border:1px solid var(--line); border-radius:17px; background:var(--panel); }
+.type-nav h2 { margin:0 0 4px; font-size:19px; }
+.type-nav p { margin:0 0 11px; color:var(--muted); font-size:12px; }
+.type-nav button { width:100%; display:grid; gap:1px; margin-top:6px; padding:10px; border:1px solid var(--line); border-left:5px solid var(--type-color); border-radius:10px; background:white; text-align:left; cursor:pointer; }
+.type-nav button.active { border-color:var(--type-color); background:color-mix(in srgb,var(--type-color) 8%,white); }
+.type-nav small { color:var(--muted); }
+.stage { overflow:hidden; border:1px solid var(--line); border-radius:22px; background:var(--panel); box-shadow:0 16px 44px rgba(29,49,40,.09); }
+.stage-head { display:flex; justify-content:space-between; gap:18px; padding:24px 27px; color:white; background:linear-gradient(120deg,color-mix(in srgb,var(--type-color) 75%,#17231f),var(--type-color)); }
+.stage-head h1 { margin:5px 0; font-size:28px; }
+.stage-head p { margin:0; color:rgba(255,255,255,.82); }
+.gate-count strong { display:block; font-size:36px; line-height:1; }
+.gate-count { text-align:right; white-space:nowrap; }
+.gate-rail { display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--line); }
+.gate-rail button { padding:12px 6px; border:0; border-right:1px solid var(--line); background:#f4f5f1; color:var(--muted); font-size:12px; }
+.gate-rail button.active { color:white; background:var(--deep); font-weight:800; }
+.gate-rail button.done { color:#27674f; background:#e8f2ed; }
+.stage-body { min-height:560px; padding:30px; }
+.prompt small { color:var(--type-color); font-weight:900; }
+.prompt h2 { margin:7px 0; font-size:27px; }
+.prompt p { margin:0; color:var(--muted); }
+.bridge { display:flex; align-items:center; justify-content:center; gap:6px; margin:25px 0; overflow-x:auto; padding:13px 3px; }
+.pier { min-width:118px; min-height:72px; display:grid; place-items:center; align-content:center; padding:9px; border:2px solid var(--type-color); border-radius:12px; background:color-mix(in srgb,var(--type-color) 8%,white); text-align:center; }
+.pier small { color:var(--type-color); font-weight:900; }
+.pier strong { font-size:13px; }
+.bridge-arrow { color:#9aa49e; font-weight:900; }
+.answers { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.answer { min-height:62px; padding:12px 14px; border:1px solid #ccd4ce; background:white; text-align:left; }
+.answer:hover,.answer.selected { border-color:var(--type-color); background:color-mix(in srgb,var(--type-color) 7%,white); box-shadow:inset 0 0 0 1px var(--type-color); }
+.feedback,.repair,.hint { margin-top:15px; padding:14px; border-radius:13px; }
+.feedback.ok { border:1px solid #b5d5c7; background:#e9f4ee; }
+.feedback.wrong { border:1px solid #e2b5a9; background:#fff0ec; }
+.repair,.hint { border:1px dashed #d1a460; background:#fff8e9; }
+.feedback p,.repair p,.hint p { margin:4px 0 0; color:var(--muted); }
+.actions { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:18px; }
+.action { padding:10px 15px; border:1px solid var(--line); background:white; font-weight:700; }
+.action.primary { color:white; border-color:var(--deep); background:var(--deep); }
+.complete { min-height:430px; display:grid; place-items:center; align-content:center; text-align:center; }
+.complete-mark { width:70px; height:70px; display:grid; place-items:center; border-radius:50%; color:white; background:var(--type-color); font-size:30px; font-weight:900; }
+.complete h2 { margin:13px 0 4px; }
+.complete p { max-width:600px; color:var(--muted); }
+@media(max-width:900px){ .hero{grid-template-columns:1fr}.type-grid{grid-template-columns:1fr 1fr}.challenge-layout{grid-template-columns:1fr}.type-nav{position:static;max-height:none}.type-nav>div{display:flex;overflow-x:auto}.type-nav button{min-width:190px}.stage-body{min-height:520px} }
+@media(max-width:580px){ body{font-size:16px}.topbar{position:static;padding:10px 12px}.brand small,.topbar nav a:not(:last-child){display:none}.page{width:calc(100% - 18px);margin-top:10px}.hero{padding:24px 20px;border-radius:21px}.hero h1{font-size:35px}.type-grid{grid-template-columns:1fr}.type-card{min-height:235px}.stage-head{padding:20px}.stage-head h1{font-size:23px}.gate-rail{display:flex;overflow-x:auto}.gate-rail button{min-width:105px}.stage-body{min-height:600px;padding:20px 14px}.answers{grid-template-columns:1fr}.pier{min-width:105px}.bridge{justify-content:flex-start}.prompt h2{font-size:23px} }
