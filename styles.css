@@ -762,6 +762,7 @@ button { color: inherit; }
   .question-library-overlay { padding: 10px; }
   .question-library-modal { padding: 17px; border-radius: 18px; }
   .question-library-tools { top: -17px; align-items: stretch; flex-direction: column; }
+  .question-library-tools .search-box { flex: 0 0 auto; }
   .archetype-library-overlay { padding: 6px; }
   .archetype-library-modal { max-height: 98vh; border-radius: 16px; }
   .archetype-library-modal > header { padding: 14px; }
