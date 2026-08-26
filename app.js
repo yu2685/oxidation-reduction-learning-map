@@ -1286,7 +1286,9 @@
 
   var initialVariant = new URL(window.location.href).searchParams.get('variant') || 'A';
   if (!variantMeta[initialVariant]) initialVariant = 'A';
-  var compactGraphView = window.matchMedia('(max-width: 820px)').matches;
+  function isTouchLandscapeView() { return window.matchMedia('(max-height: 520px) and (pointer: coarse)').matches; }
+  var touchLandscapeView = isTouchLandscapeView();
+  var compactGraphView = window.matchMedia('(max-width: 820px)').matches || touchLandscapeView;
 
   var graphCanvasWidth = 1200;
   var graphCanvasHeight = 815;
@@ -1315,6 +1317,7 @@
     activePathEdgeIds: null,
     activePathLabel: '',
     activeGapId: null,
+    showLandscapeDetail: false,
     graphZoom: compactGraphView ? 0.72 : 1,
     graphPanX: compactGraphView ? 10 : 20,
     graphPanY: compactGraphView ? 45 : 12
@@ -1639,17 +1642,18 @@
 
   function renderVariantA() {
     return [
-      '<div class="app-shell">',
+      '<div class="app-shell ' + (state.showLandscapeDetail ? 'landscape-detail-open' : '') + '">',
         topbar(),
         commonToolbar(),
         questionContextBar(),
         '<main class="variant-a-grid">',
           sideFilters(),
           '<section class="graph-stage" id="knowledge-graph">',
-            '<div class="graph-toolbar"><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小知识图">−</button><button class="icon-button graph-zoom-value" data-action="zoom-reset" title="重置缩放和位置">' + Math.round(state.graphZoom * 100) + '%</button><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大知识图">＋</button><span class="graph-help">Ctrl＋滚轮缩放 · 按住空白处拖动</span><span class="graph-mobile-help">单指拖动空白处</span><a class="graph-mobile-detail-link" href="#mobile-detail">看详情↓</a></div>',
+            '<div class="graph-toolbar"><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小知识图">−</button><button class="icon-button graph-zoom-value" data-action="zoom-reset" title="重置缩放和位置">' + Math.round(state.graphZoom * 100) + '%</button><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大知识图">＋</button><span class="graph-help">Ctrl＋滚轮缩放 · 按住空白处拖动</span><span class="graph-mobile-help">单指拖动 · 双指缩放</span><a class="graph-mobile-detail-link" href="#mobile-detail">看详情↓</a><button class="landscape-detail-trigger" data-action="open-landscape-detail">节点详情</button></div>',
             '<div class="graph-canvas" style="width:' + graphCanvasWidth + 'px;height:' + graphCanvasHeight + 'px;' + graphTransformStyle() + '">' + graphSvg() + '</div>',
           '</section>',
-          '<aside class="side-panel right" id="mobile-detail"><div class="mobile-detail-handle"><span>节点详情 · 区域内上下滑动</span><a href="#knowledge-graph">返回图↑</a></div>' + detailPanel(false) + '</aside>',
+          '<button class="landscape-detail-backdrop ' + (state.showLandscapeDetail ? 'open' : '') + '" data-action="close-landscape-detail" aria-label="关闭节点详情"></button>',
+          '<aside class="side-panel right landscape-detail-drawer ' + (state.showLandscapeDetail ? 'open' : '') + '" id="mobile-detail"><div class="mobile-detail-handle"><span>节点详情 · 区域内上下滑动</span><a href="#knowledge-graph">返回图↑</a><button class="landscape-detail-close" data-action="close-landscape-detail" aria-label="关闭节点详情">×</button></div>' + detailPanel(false) + '</aside>',
         '</main>',
         archetypeLibrary(),
         questionLibrary(),
@@ -2041,7 +2045,7 @@
       archetype_library: { open: state.showArchetypeLibrary, selected: state.activeArchetypeId, subtype: state.activeSubtypeId, highlighted: state.highlightedArchetypeId },
       active_subpath: state.activePathNodeIds ? { label: state.activePathLabel, nodes: state.activePathNodeIds, edges: state.activePathEdgeIds } : null,
       active_candidate_gap: state.activeGapId,
-      graph_view: { zoom: state.graphZoom, pan_x: state.graphPanX, pan_y: state.graphPanY },
+      graph_view: { zoom: state.graphZoom, pan_x: state.graphPanX, pan_y: state.graphPanY, landscape_detail_open: state.showLandscapeDetail },
       evidence_overlay: Object.keys(state.evidence).filter(function (id) { return state.evidence[id] !== 'unobserved'; }).reduce(function (acc, id) { acc[id] = state.evidence[id]; return acc; }, {}),
       persistence: 'memory_only',
       student_evidence_imported: false
@@ -2121,15 +2125,70 @@
     }, { passive: false });
 
     var drag = null;
+    var touchPoints = {};
+    var suppressedTouchTaps = {};
+    var pinch = null;
+    function pointDistance(a, b) {
+      var dx = a.x - b.x;
+      var dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    function startPinch() {
+      var points = Object.keys(touchPoints).map(function (id) { return touchPoints[id]; });
+      if (points.length < 2) return;
+      var rect = stage.getBoundingClientRect();
+      var midX = (points[0].x + points[1].x) / 2 - rect.left;
+      var midY = (points[0].y + points[1].y) / 2 - rect.top;
+      pinch = {
+        distance: pointDistance(points[0], points[1]),
+        zoom: state.graphZoom,
+        canvasX: (midX - state.graphPanX) / state.graphZoom,
+        canvasY: (midY - state.graphPanY) / state.graphZoom
+      };
+      Object.keys(touchPoints).forEach(function (id) { suppressedTouchTaps[id] = true; });
+      drag = null;
+      stage.classList.add('is-panning');
+    }
     stage.addEventListener('pointerdown', function (event) {
-      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      var graphTappable = event.target.closest('.graph-node, .edge-hit');
+      if (event.pointerType === 'touch') {
+        if (!graphTappable && event.target.closest('[data-action], button, a, input')) return;
+        touchPoints[event.pointerId] = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        stage.setPointerCapture(event.pointerId);
+        if (Object.keys(touchPoints).length >= 2) startPinch();
+        else if (!graphTappable) {
+          drag = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: state.graphPanX, panY: state.graphPanY };
+          stage.classList.add('is-panning');
+        }
+        event.preventDefault();
+        return;
+      }
       if (event.target.closest('[data-action], button, a, input, .graph-node, .edge-hit')) return;
+      if (!event.isPrimary || event.button !== 0) return;
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: state.graphPanX, panY: state.graphPanY };
       stage.setPointerCapture(event.pointerId);
       stage.classList.add('is-panning');
       event.preventDefault();
     });
     stage.addEventListener('pointermove', function (event) {
+      if (event.pointerType === 'touch' && touchPoints[event.pointerId]) {
+        touchPoints[event.pointerId].x = event.clientX;
+        touchPoints[event.pointerId].y = event.clientY;
+        var points = Object.keys(touchPoints).map(function (id) { return touchPoints[id]; });
+        if (pinch && points.length >= 2) {
+          var rect = stage.getBoundingClientRect();
+          var midX = (points[0].x + points[1].x) / 2 - rect.left;
+          var midY = (points[0].y + points[1].y) / 2 - rect.top;
+          var minimumZoom = compactGraphView ? 0.45 : 0.55;
+          var nextZoom = Math.min(2.4, Math.max(minimumZoom, pinch.zoom * pointDistance(points[0], points[1]) / pinch.distance));
+          state.graphZoom = Math.round(nextZoom * 100) / 100;
+          state.graphPanX = midX - pinch.canvasX * state.graphZoom;
+          state.graphPanY = midY - pinch.canvasY * state.graphZoom;
+          applyGraphTransform();
+          event.preventDefault();
+          return;
+        }
+      }
       if (!drag || drag.id !== event.pointerId) return;
       state.graphPanX = drag.panX + event.clientX - drag.x;
       state.graphPanY = drag.panY + event.clientY - drag.y;
@@ -2137,6 +2196,19 @@
       event.preventDefault();
     });
     function endDrag(event) {
+      if (event.pointerType === 'touch') {
+        delete touchPoints[event.pointerId];
+        if (stage.hasPointerCapture(event.pointerId)) stage.releasePointerCapture(event.pointerId);
+        var remaining = Object.keys(touchPoints).map(function (id) { return touchPoints[id]; });
+        if (remaining.length < 2) pinch = null;
+        if (remaining.length === 1) {
+          drag = { id: remaining[0].id, x: remaining[0].x, y: remaining[0].y, panX: state.graphPanX, panY: state.graphPanY };
+        } else if (!remaining.length) {
+          drag = null;
+          stage.classList.remove('is-panning');
+        }
+        return;
+      }
       if (!drag || drag.id !== event.pointerId) return;
       drag = null;
       stage.classList.remove('is-panning');
@@ -2144,9 +2216,13 @@
     }
     stage.addEventListener('pointerup', endDrag);
     stage.addEventListener('pointercancel', endDrag);
-    stage.addEventListener('lostpointercapture', function () { drag = null; stage.classList.remove('is-panning'); });
+    stage.addEventListener('lostpointercapture', function (event) {
+      if (event.pointerType === 'touch') delete touchPoints[event.pointerId];
+      if (!Object.keys(touchPoints).length) { drag = null; pinch = null; stage.classList.remove('is-panning'); }
+    });
     stage.addEventListener('pointerup', function (event) {
       if (event.pointerType !== 'touch') return;
+      if (suppressedTouchTaps[event.pointerId]) { delete suppressedTouchTaps[event.pointerId]; return; }
       var tappable = event.target.closest('.graph-node, .edge-hit');
       if (!tappable) return;
       tappable.click();
@@ -2158,8 +2234,10 @@
     document.querySelectorAll('[data-action]').forEach(function (el) {
       el.addEventListener('click', function (event) {
         var action = el.getAttribute('data-action');
-        if (action === 'select-node') { state.selectedKind = 'node'; state.selectedId = el.getAttribute('data-id'); if (el.closest('.question-drawer')) state.openQuestionId = null; render(); }
-        else if (action === 'select-edge') { state.selectedKind = 'edge'; state.selectedId = el.getAttribute('data-id'); render(); }
+        if (action === 'select-node') { state.selectedKind = 'node'; state.selectedId = el.getAttribute('data-id'); if (el.closest('.question-drawer')) state.openQuestionId = null; if (isTouchLandscapeView()) state.showLandscapeDetail = true; render(); }
+        else if (action === 'select-edge') { state.selectedKind = 'edge'; state.selectedId = el.getAttribute('data-id'); if (isTouchLandscapeView()) state.showLandscapeDetail = true; render(); }
+        else if (action === 'open-landscape-detail') { state.showLandscapeDetail = true; render(); }
+        else if (action === 'close-landscape-detail') { state.showLandscapeDetail = false; render(); }
         else if (action === 'layer') { state.layer = el.getAttribute('data-id'); render(); }
         else if (action === 'question') {
           state.question = el.getAttribute('data-id');
@@ -2347,7 +2425,8 @@
     if (tag === 'INPUT' || tag === 'TEXTAREA' || editable) return;
     if (event.key === 'ArrowLeft') cycleVariant(-1);
     if (event.key === 'ArrowRight') cycleVariant(1);
-    if (event.key === 'Escape' && state.showState) { state.showState = false; render(); }
+    if (event.key === 'Escape' && state.showLandscapeDetail) { state.showLandscapeDetail = false; render(); }
+    else if (event.key === 'Escape' && state.showState) { state.showState = false; render(); }
     else if (event.key === 'Escape' && state.openQuestionId) { state.openQuestionId = null; render(); }
     else if (event.key === 'Escape' && state.showQuestionLibrary) { state.showQuestionLibrary = false; render(); }
     else if (event.key === 'Escape' && state.showArchetypeLibrary) { state.showArchetypeLibrary = false; render(); }
