@@ -1286,6 +1286,7 @@
 
   var initialVariant = new URL(window.location.href).searchParams.get('variant') || 'A';
   if (!variantMeta[initialVariant]) initialVariant = 'A';
+  var compactGraphView = window.matchMedia('(max-width: 820px)').matches;
 
   var graphCanvasWidth = 1200;
   var graphCanvasHeight = 815;
@@ -1314,9 +1315,9 @@
     activePathEdgeIds: null,
     activePathLabel: '',
     activeGapId: null,
-    graphZoom: 1,
-    graphPanX: 20,
-    graphPanY: 12
+    graphZoom: compactGraphView ? 0.72 : 1,
+    graphPanX: compactGraphView ? 10 : 20,
+    graphPanY: compactGraphView ? 45 : 12
   };
 
   nodes.forEach(function (n) { state.evidence[n.id] = 'unobserved'; });
@@ -1627,7 +1628,7 @@
       var layer = layers[n.layer];
       var ev = currentEvidence(n.id);
       var cls = 'graph-node' + (state.selectedKind === 'node' && state.selectedId === n.id ? ' active' : '') + ((state.question !== 'all' || state.activePathNodeIds) && pathHasNode(n.id) ? ' path-active' : '') + (nodeDimmed(n) ? ' dimmed' : '');
-      return '<foreignObject class="node-foreign" x="' + n.x + '" y="' + n.y + '" width="146" height="70" data-action="select-node" data-id="' + n.id + '"><div xmlns="http://www.w3.org/1999/xhtml" class="' + cls + '" style="--node-color:' + layer.color + '"><div><div class="node-code">' + n.id + '</div><div class="node-name">' + esc(n.name) + '</div></div><span class="evidence-dot" style="--evidence-color:' + ev.color + '" title="' + esc(ev.name) + '"></span></div></foreignObject>';
+      return '<foreignObject class="node-foreign" x="' + n.x + '" y="' + n.y + '" width="146" height="70"><div xmlns="http://www.w3.org/1999/xhtml" class="' + cls + '" style="--node-color:' + layer.color + '" data-action="select-node" data-id="' + n.id + '" role="button" tabindex="0"><div><div class="node-code">' + n.id + '</div><div class="node-name">' + esc(n.name) + '</div></div><span class="evidence-dot" style="--evidence-color:' + ev.color + '" title="' + esc(ev.name) + '"></span></div></foreignObject>';
     }).join('');
     return '<svg class="knowledge-svg" viewBox="0 0 1200 815" role="img" aria-label="氧化还原知识连接全景图"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#8f9b94"></path></marker></defs>' + backs + edgeHtml + nodeHtml + '</svg>';
   }
@@ -1644,11 +1645,11 @@
         questionContextBar(),
         '<main class="variant-a-grid">',
           sideFilters(),
-          '<section class="graph-stage">',
-            '<div class="graph-toolbar"><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小知识图">−</button><button class="icon-button graph-zoom-value" data-action="zoom-reset" title="重置缩放和位置">' + Math.round(state.graphZoom * 100) + '%</button><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大知识图">＋</button><span class="graph-help">Ctrl＋滚轮缩放 · 按住空白处拖动</span></div>',
+          '<section class="graph-stage" id="knowledge-graph">',
+            '<div class="graph-toolbar"><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小知识图">−</button><button class="icon-button graph-zoom-value" data-action="zoom-reset" title="重置缩放和位置">' + Math.round(state.graphZoom * 100) + '%</button><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大知识图">＋</button><span class="graph-help">Ctrl＋滚轮缩放 · 按住空白处拖动</span><span class="graph-mobile-help">单指拖动空白处</span><a class="graph-mobile-detail-link" href="#mobile-detail">看详情↓</a></div>',
             '<div class="graph-canvas" style="width:' + graphCanvasWidth + 'px;height:' + graphCanvasHeight + 'px;' + graphTransformStyle() + '">' + graphSvg() + '</div>',
           '</section>',
-          '<aside class="side-panel right">' + detailPanel(false) + '</aside>',
+          '<aside class="side-panel right" id="mobile-detail"><div class="mobile-detail-handle"><span>节点详情 · 区域内上下滑动</span><a href="#knowledge-graph">返回图↑</a></div>' + detailPanel(false) + '</aside>',
         '</main>',
         archetypeLibrary(),
         questionLibrary(),
@@ -2087,7 +2088,8 @@
     var stage = document.querySelector('.graph-stage');
     if (!stage) return;
     var oldZoom = state.graphZoom;
-    var next = Math.min(2.4, Math.max(0.55, Math.round(nextZoom * 100) / 100));
+    var minimumZoom = compactGraphView ? 0.45 : 0.55;
+    var next = Math.min(2.4, Math.max(minimumZoom, Math.round(nextZoom * 100) / 100));
     if (next === oldZoom) return;
     var x = anchorX == null ? stage.clientWidth / 2 : anchorX;
     var y = anchorY == null ? stage.clientHeight / 2 : anchorY;
@@ -2101,9 +2103,9 @@
 
   function resetGraphView() {
     var stage = document.querySelector('.graph-stage');
-    state.graphZoom = 1;
-    state.graphPanX = stage ? Math.max(20, (stage.clientWidth - graphCanvasWidth) / 2) : 20;
-    state.graphPanY = 12;
+    state.graphZoom = compactGraphView ? 0.72 : 1;
+    state.graphPanX = compactGraphView ? 10 : (stage ? Math.max(20, (stage.clientWidth - graphCanvasWidth) / 2) : 20);
+    state.graphPanY = compactGraphView ? 45 : 12;
     applyGraphTransform();
   }
 
@@ -2120,8 +2122,8 @@
 
     var drag = null;
     stage.addEventListener('pointerdown', function (event) {
-      if (event.button !== 0 || event.pointerType !== 'mouse') return;
-      if (event.target.closest('[data-action], button, a, input')) return;
+      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      if (event.target.closest('[data-action], button, a, input, .graph-node, .edge-hit')) return;
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, panX: state.graphPanX, panY: state.graphPanY };
       stage.setPointerCapture(event.pointerId);
       stage.classList.add('is-panning');
@@ -2132,6 +2134,7 @@
       state.graphPanX = drag.panX + event.clientX - drag.x;
       state.graphPanY = drag.panY + event.clientY - drag.y;
       applyGraphTransform();
+      event.preventDefault();
     });
     function endDrag(event) {
       if (!drag || drag.id !== event.pointerId) return;
@@ -2142,6 +2145,13 @@
     stage.addEventListener('pointerup', endDrag);
     stage.addEventListener('pointercancel', endDrag);
     stage.addEventListener('lostpointercapture', function () { drag = null; stage.classList.remove('is-panning'); });
+    stage.addEventListener('pointerup', function (event) {
+      if (event.pointerType !== 'touch') return;
+      var tappable = event.target.closest('.graph-node, .edge-hit');
+      if (!tappable) return;
+      tappable.click();
+      event.preventDefault();
+    });
   }
 
   function bind() {
